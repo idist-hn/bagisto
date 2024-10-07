@@ -1,6 +1,6 @@
 #!/bin/bash
 source .env
-endpoint=$(read_var REGISTRY)
+endpoint=$(read_var REGISTRY)x
 
-echo "Building and pushing dockerfile to $endpoint..."
-docker build --platform=linux/amd64 -t $endpoint . && docker push $endpoint
+echo "Building and pushing dockerfile to $REGISTRY..."
+docker build -t $REGISTRY . && docker push $REGISTRY
