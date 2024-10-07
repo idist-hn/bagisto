@@ -10,3 +10,7 @@
 | contains the "web" middleware group. Now create something great!
 |
 */
+
+Route::get('/version', function () {
+    return response()->json(['Laravel' => env()->get("APP_VERSION")]);
+});
