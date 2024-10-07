@@ -29,5 +29,6 @@ COPY --from=build /app/ /app/
 
 COPY .env.production /app/.env
 RUN php artisan key:generate --force
-RUN php artisan optimize
+RUN php artisan optimize:clear
+RUN chmod -R 777 storage bootstrap
 EXPOSE 80
