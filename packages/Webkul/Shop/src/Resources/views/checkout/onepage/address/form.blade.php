@@ -82,7 +82,7 @@
                     ::value="address.email"
                     rules="required|email"
                     :label="trans('shop::app.checkout.onepage.address.email')"
-                    placeholder="email@example.com"
+                    placeholder="Email"
                 />
 
                 <x-shop::form.control-group.error ::name="controlName + '.email'" />

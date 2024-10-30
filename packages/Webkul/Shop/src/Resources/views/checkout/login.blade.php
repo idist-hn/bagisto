@@ -56,7 +56,7 @@
                                     name="email"
                                     rules="required|email"
                                     :label="trans('shop::app.checkout.login.email')"
-                                    placeholder="email@example.com"
+                                    placeholder="Email"
                                     :aria-label="trans('shop::app.checkout.login.email')"
                                     aria-required="true"
                                 />
@@ -109,7 +109,7 @@
     <script type="module">
         app.component('v-checkout-login', {
             template: '#v-checkout-login-template',
-            
+
             data() {
                 return {
                     isStoring: false,

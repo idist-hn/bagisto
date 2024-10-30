@@ -115,7 +115,7 @@
                             rules="required|email"
                             :value="old('email')"
                             :label="trans('shop::app.customers.signup-form.email')"
-                            placeholder="email@example.com"
+                            placeholder="Email"
                             :aria-label="trans('shop::app.customers.signup-form.email')"
                             aria-required="true"
                         />

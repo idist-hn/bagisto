@@ -66,7 +66,7 @@
                             rules="required|email"
                             value=""
                             :label="trans('shop::app.customers.login-form.email')"
-                            placeholder="email@example.com"
+                            placeholder="Email"
                             :aria-label="trans('shop::app.customers.login-form.email')"
                             aria-required="true"
                         />

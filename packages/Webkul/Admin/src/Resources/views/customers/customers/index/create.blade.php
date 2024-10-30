@@ -71,7 +71,7 @@
                                 name="email"
                                 rules="required|email"
                                 :label="trans('admin::app.customers.customers.index.create.email')"
-                                placeholder="email@example.com"
+                                placeholder="Email"
                             />
 
                             <x-admin::form.control-group.error control-name="email" />
@@ -158,12 +158,12 @@
                                     :label="trans('admin::app.customers.customers.index.create.customer-group')"
                                     ::value="groups[0]?.id"
                                 >
-                                    <option 
-                                        v-for="group in groups" 
+                                    <option
+                                        v-for="group in groups"
                                         :value="group.id"
                                         selected
-                                    > 
-                                        @{{ group.name }} 
+                                    >
+                                        @{{ group.name }}
                                     </option>
                                 </x-admin::form.control-group.control>
 
@@ -222,7 +222,7 @@
 
                             this.isLoading = false;
                         })
-                        .catch(error => {                            
+                        .catch(error => {
                             this.isLoading = false;
 
                             if (error.response.status == 422) {
