@@ -1,5 +1,4 @@
 <?php
-
 return [
     'checkout' => [
         'cart' => [
@@ -25,12 +24,12 @@ return [
 
     'sort-by'  => [
         'options' => [
-            'cheapest-first'  => 'Rẻ Nhất Đầu Tiên',
-            'expensive-first' => 'Đắt Nhất Đầu Tiên',
+            'cheapest-first'  => 'Rẻ Nhất',
+            'expensive-first' => 'Đắt Nhất',
             'from-a-z'        => 'Từ A-Z',
             'from-z-a'        => 'Từ Z-A',
-            'latest-first'    => 'Mới Nhất Đầu Tiên',
-            'oldest-first'    => 'Cũ Nhất Đầu Tiên',
+            'latest-first'    => 'Mới Nhất',
+            'oldest-first'    => 'Cũ Nhất',
         ],
     ],
 
