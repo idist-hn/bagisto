@@ -1,49 +1,47 @@
-<?php
-
 return [
     'checkout' => [
         'cart' => [
             'integrity' => [
-                'qty-missing'   => 'At least one product should have more than 1 quantity.',
+                'qty-missing'   => 'Ít nhất một sản phẩm phải có số lượng lớn hơn 1.',
             ],
 
-            'inventory-warning' => 'The requested quantity is not available, please try again later.',
-            'missing-links'     => 'Downloadable links are missing for this product.',
-            'missing-options'   => 'Options are missing for this product.',
+            'inventory-warning' => 'Số lượng yêu cầu không có sẵn, vui lòng thử lại sau.',
+            'missing-links'     => 'Các liên kết tải xuống bị thiếu cho sản phẩm này.',
+            'missing-options'   => 'Các tùy chọn bị thiếu cho sản phẩm này.',
         ],
     ],
 
     'datagrid' => [
-        'copy-of-slug'                  => 'copy-of-:value',
-        'copy-of'                       => 'Copy Of :value',
-        'variant-already-exist-message' => 'Variant with same attribute options already exists.',
+        'copy-of-slug'                  => 'sao-chép-:value',
+        'copy-of'                       => 'Sao Chép :value',
+        'variant-already-exist-message' => 'Biến thể với các tùy chọn thuộc tính tương tự đã tồn tại.',
     ],
 
     'response' => [
-        'product-can-not-be-copied' => 'Products of type :type can not be copied',
+        'product-can-not-be-copied' => 'Sản phẩm loại :type không thể được sao chép',
     ],
 
     'sort-by'  => [
         'options' => [
-            'cheapest-first'  => 'Cheapest First',
-            'expensive-first' => 'Expensive First',
-            'from-a-z'        => 'From A-Z',
-            'from-z-a'        => 'From Z-A',
-            'latest-first'    => 'Newest First',
-            'oldest-first'    => 'Oldest First',
+            'cheapest-first'  => 'Rẻ Nhất Đầu Tiên',
+            'expensive-first' => 'Đắt Nhất Đầu Tiên',
+            'from-a-z'        => 'Từ A-Z',
+            'from-z-a'        => 'Từ Z-A',
+            'latest-first'    => 'Mới Nhất Đầu Tiên',
+            'oldest-first'    => 'Cũ Nhất Đầu Tiên',
         ],
     ],
 
     'type'     => [
         'abstract'     => [
-            'offers' => 'Buy :qty for :price each and save :discount',
+            'offers' => 'Mua :qty với giá :price mỗi cái và tiết kiệm :discount',
         ],
 
-        'bundle'       => 'Bundle',
-        'configurable' => 'Configurable',
-        'downloadable' => 'Downloadable',
-        'grouped'      => 'Grouped',
-        'simple'       => 'Simple',
-        'virtual'      => 'Virtual',
+        'bundle'       => 'Gói',
+        'configurable' => 'Có thể cấu hình',
+        'downloadable' => 'Có thể tải xuống',
+        'grouped'      => 'Nhóm',
+        'simple'       => 'Đơn giản',
+        'virtual'      => 'Ảo',
     ],
 ];
