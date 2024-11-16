@@ -369,7 +369,7 @@ img.lazy {
     }
 
     * {
-        @apply box-border font-google-sans;
+        @apply box-border font-dmserif;
     }
 
     .scrollbar-hide::-webkit-scrollbar {

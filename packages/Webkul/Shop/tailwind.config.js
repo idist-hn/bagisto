@@ -37,9 +37,9 @@ module.exports = {
             },
 
             fontFamily: {
-                poppins: ["Poppins"],
+                poppins: ["Inter"],
                 'google-sans': ["Google Sans"],
-                dmserif: ["DM Serif Display"],
+                dmserif: ["Inter"],
             },
         }
     },
