@@ -155,7 +155,7 @@
                         <p class="py-2px mt-3 w-full border border-zinc-200"></p>
 
                         {!! view_render_event('bagisto.shop.components.layouts.header.desktop.bottom.customers_action.before') !!}
-                        
+
                         <div class="mt-6 flex gap-4">
                             {!! view_render_event('bagisto.shop.components.layouts.header.desktop.bottom.sign_in_button.before') !!}
 
@@ -172,7 +172,7 @@
                             >
                                 @lang('shop::app.components.layouts.header.sign-up')
                             </a>
-                            
+
                             {!! view_render_event('bagisto.shop.components.layouts.header.desktop.bottom.sign_up_button.after') !!}
                         </div>
 
@@ -185,7 +185,7 @@
                     <x-slot:content class="!p-0">
                         <div class="grid gap-2.5 p-5 pb-0">
                             <p class="font-dmserif text-xl">
-                                @lang('shop::app.components.layouts.header.welcome')’
+                                @lang('shop::app.components.layouts.header.welcome')
                                 {{ auth()->guard('customer')->user()->first_name }}
                             </p>
 
