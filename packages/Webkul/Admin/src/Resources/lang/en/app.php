@@ -4482,5 +4482,4 @@ return [
             'tracking-number'            => 'Số Theo Dõi: :tracking_number',
         ],
     ],
-
 ];
