@@ -13,8 +13,8 @@ RUN npm install
 COPY . /app
 RUN rm -rf /app/storage/installed
 RUN sed -i -e "2 s/APP_VERSION: .*/APP_VERSION: $(date '+%Y.%m.%d.%H.%M')/" ./.env.production
-RUN #composer install --no-dev
-RUN composer install
+RUN composer install --no-dev
+RUN #composer install
 
 # build source code
 RUN npm run build && rm -rf node_modules
