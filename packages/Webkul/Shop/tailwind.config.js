@@ -40,7 +40,7 @@ module.exports = {
                 poppins: ["Poppins"],
                 nunito: ["nunito"],
                 'google-sans': ["Google Sans"],
-                dmserif: ["Inter"],
+                dmserif: ["nunito", "Inter"],
             },
         }
     },
