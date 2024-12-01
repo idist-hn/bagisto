@@ -1,12 +1,76 @@
 {
   "src/Resources/assets/css/app.css": {
-    "file": "assets/app-1ea1a5e3.css",
+    "file": "assets/app-37373e93.css",
     "isEntry": true,
     "src": "src/Resources/assets/css/app.css"
   },
   "src/Resources/assets/fonts/bagisto-shop.woff": {
     "file": "assets/bagisto-shop-5afe0d07.woff",
     "src": "src/Resources/assets/fonts/bagisto-shop.woff"
+  },
+  "src/Resources/assets/fonts/nunito/Nunito-Black.ttf": {
+    "file": "assets/Nunito-Black-781ed063.ttf",
+    "src": "src/Resources/assets/fonts/nunito/Nunito-Black.ttf"
+  },
+  "src/Resources/assets/fonts/nunito/Nunito-BlackItalic.ttf": {
+    "file": "assets/Nunito-BlackItalic-217b0ee5.ttf",
+    "src": "src/Resources/assets/fonts/nunito/Nunito-BlackItalic.ttf"
+  },
+  "src/Resources/assets/fonts/nunito/Nunito-Bold.ttf": {
+    "file": "assets/Nunito-Bold-f82add5c.ttf",
+    "src": "src/Resources/assets/fonts/nunito/Nunito-Bold.ttf"
+  },
+  "src/Resources/assets/fonts/nunito/Nunito-BoldItalic.ttf": {
+    "file": "assets/Nunito-BoldItalic-607932cd.ttf",
+    "src": "src/Resources/assets/fonts/nunito/Nunito-BoldItalic.ttf"
+  },
+  "src/Resources/assets/fonts/nunito/Nunito-ExtraBold.ttf": {
+    "file": "assets/Nunito-ExtraBold-cf23a8a4.ttf",
+    "src": "src/Resources/assets/fonts/nunito/Nunito-ExtraBold.ttf"
+  },
+  "src/Resources/assets/fonts/nunito/Nunito-ExtraBoldItalic.ttf": {
+    "file": "assets/Nunito-ExtraBoldItalic-512660b8.ttf",
+    "src": "src/Resources/assets/fonts/nunito/Nunito-ExtraBoldItalic.ttf"
+  },
+  "src/Resources/assets/fonts/nunito/Nunito-ExtraLight.ttf": {
+    "file": "assets/Nunito-ExtraLight-ee16f21e.ttf",
+    "src": "src/Resources/assets/fonts/nunito/Nunito-ExtraLight.ttf"
+  },
+  "src/Resources/assets/fonts/nunito/Nunito-ExtraLightItalic.ttf": {
+    "file": "assets/Nunito-ExtraLightItalic-31bc058b.ttf",
+    "src": "src/Resources/assets/fonts/nunito/Nunito-ExtraLightItalic.ttf"
+  },
+  "src/Resources/assets/fonts/nunito/Nunito-Italic.ttf": {
+    "file": "assets/Nunito-Italic-d7e2873a.ttf",
+    "src": "src/Resources/assets/fonts/nunito/Nunito-Italic.ttf"
+  },
+  "src/Resources/assets/fonts/nunito/Nunito-Light.ttf": {
+    "file": "assets/Nunito-Light-5b689241.ttf",
+    "src": "src/Resources/assets/fonts/nunito/Nunito-Light.ttf"
+  },
+  "src/Resources/assets/fonts/nunito/Nunito-LightItalic.ttf": {
+    "file": "assets/Nunito-LightItalic-6dc4782e.ttf",
+    "src": "src/Resources/assets/fonts/nunito/Nunito-LightItalic.ttf"
+  },
+  "src/Resources/assets/fonts/nunito/Nunito-Medium.ttf": {
+    "file": "assets/Nunito-Medium-5cb845fb.ttf",
+    "src": "src/Resources/assets/fonts/nunito/Nunito-Medium.ttf"
+  },
+  "src/Resources/assets/fonts/nunito/Nunito-MediumItalic.ttf": {
+    "file": "assets/Nunito-MediumItalic-1b3ed079.ttf",
+    "src": "src/Resources/assets/fonts/nunito/Nunito-MediumItalic.ttf"
+  },
+  "src/Resources/assets/fonts/nunito/Nunito-Regular.ttf": {
+    "file": "assets/Nunito-Regular-ea59b5f0.ttf",
+    "src": "src/Resources/assets/fonts/nunito/Nunito-Regular.ttf"
+  },
+  "src/Resources/assets/fonts/nunito/Nunito-SemiBold.ttf": {
+    "file": "assets/Nunito-SemiBold-e42b3f1e.ttf",
+    "src": "src/Resources/assets/fonts/nunito/Nunito-SemiBold.ttf"
+  },
+  "src/Resources/assets/fonts/nunito/Nunito-SemiBoldItalic.ttf": {
+    "file": "assets/Nunito-SemiBoldItalic-365b353a.ttf",
+    "src": "src/Resources/assets/fonts/nunito/Nunito-SemiBoldItalic.ttf"
   },
   "src/Resources/assets/images/cash-on-delivery.png": {
     "file": "assets/cash-on-delivery-73061c49.png",

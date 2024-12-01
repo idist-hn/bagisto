@@ -9,7 +9,7 @@
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     </head>
 
-    <body style="font-family: inter;">
+    <body style="font-family: nunito;">
         <div style="max-width: 640px; margin-left: auto; margin-right: auto;">
             <div style="padding: 30px;">
                 <!-- Email Header -->
