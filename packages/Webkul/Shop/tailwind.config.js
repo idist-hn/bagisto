@@ -37,6 +37,7 @@ module.exports = {
             },
 
             fontFamily: {
+                sans: ["nunito", 'sans-serif'],
                 poppins: ["Poppins"],
                 nunito: ["nunito"],
                 'google-sans': ["Google Sans"],
