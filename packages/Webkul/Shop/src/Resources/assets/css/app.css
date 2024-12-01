@@ -405,7 +405,7 @@ img.lazy {
     }
 
     * {
-        @apply box-border font-dmserif;
+        @apply box-border font-nunito;
     }
 
     .scrollbar-hide::-webkit-scrollbar {
