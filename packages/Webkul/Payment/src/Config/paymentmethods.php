@@ -3,7 +3,7 @@
 return [
     'cashondelivery'  => [
         'code'        => 'cashondelivery',
-        'title'       => 'Cash On Delivery',
+        'title'       => 'Thanh toán khi nhận hàng',
         'description' => 'Cash On Delivery',
         'class'       => 'Webkul\Payment\Payment\CashOnDelivery',
         'active'      => true,
@@ -12,7 +12,7 @@ return [
 
     'moneytransfer'   => [
         'code'        => 'moneytransfer',
-        'title'       => 'Money Transfer',
+        'title'       => 'Chuyển khoản',
         'description' => 'Money Transfer',
         'class'       => 'Webkul\Payment\Payment\MoneyTransfer',
         'active'      => true,
