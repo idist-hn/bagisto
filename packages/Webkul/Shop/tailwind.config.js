@@ -37,9 +37,11 @@ module.exports = {
             },
 
             fontFamily: {
+                sans: ["nunito", 'sans-serif'],
                 poppins: ["Poppins"],
+                nunito: ["nunito"],
                 'google-sans': ["Google Sans"],
-                dmserif: ["DM Serif Display"],
+                dmserif: ["nunito", "Inter"],
             },
         }
     },
