@@ -2907,14 +2907,14 @@ return [
                 'select-default-currency' => 'Chọn Tiền Tệ Mặc Định',
                 'select-default-locale'   => 'Chọn Ngôn Ngữ Địa Phương Mặc Định',
                 'select-root-category'    => 'Chọn Danh Mục Gốc',
-                'select-theme'            => 'Chọn Chủ Đề',
+                'select-theme'            => 'Chọn Giao diện trang chủ',
                 'seo'                     => 'SEO Trang Chủ',
                 'seo-description'         => 'Mô Tả Trang',
                 'seo-keywords'            => 'Từ Khóa Trang',
                 'seo-title'               => 'Tiêu Đề Trang',
                 'settings'                => 'Cài Đặt',
                 'status'                  => 'Trạng Thái',
-                'theme'                   => 'Chủ Đề',
+                'theme'                   => 'Giao diện trang chủ',
                 'title'                   => 'Tạo Kênh',
             ],
 
@@ -3067,8 +3067,8 @@ return [
 
         'themes' => [
             'index' => [
-                'create-btn' => 'Tạo Chủ Đề',
-                'title'      => 'Chủ Đề',
+                'create-btn' => 'Tạo giao diện trang chủ',
+                'title'      => 'Giao diện trang chủ',
 
                 'datagrid' => [
                     'active'       => 'Hoạt Động',
@@ -3079,7 +3079,7 @@ return [
                     'name'         => 'Tên',
                     'sort-order'   => 'Thứ Tự Sắp Xếp',
                     'status'       => 'Trạng Thái',
-                    'theme'        => 'Chủ Đề',
+                    'theme'        => 'Giao diện',
                     'type'         => 'Loại',
                     'view'         => 'Xem',
                 ],
@@ -3087,10 +3087,10 @@ return [
 
             'create' => [
                 'name'       => 'Tên',
-                'save-btn'   => 'Lưu Chủ Đề',
+                'save-btn'   => 'Lưu giao diện trang chủ',
                 'sort-order' => 'Thứ Tự Sắp Xếp',
-                'themes'     => 'Chủ Đề',
-                'title'      => 'Tạo Chủ Đề',
+                'themes'     => 'Giao diện trang chủ',
+                'title'      => 'Tạo giao diện trang chủ',
 
                 'type' => [
                     'category-carousel' => 'Carouse Danh Mục',
@@ -3150,7 +3150,7 @@ return [
                 'select'                        => 'Chọn',
                 'slider'                        => 'Trình Chiếu',
                 'slider-add-btn'                => 'Thêm Trình Chiếu',
-                'slider-description'            => 'Tùy chỉnh chủ đề liên quan đến trình chiếu.',
+                'slider-description'            => 'Tùy chỉnh giao diện trang chủ liên quan đến trình chiếu.',
                 'slider-image'                  => 'Hình Ảnh Trình Chiếu',
                 'slider-required'               => 'Trường trình chiếu là bắt buộc.',
                 'sort'                          => 'Sắp Xếp',
@@ -3158,8 +3158,8 @@ return [
                 'static-content'                => 'Nội Dung Tĩnh',
                 'static-content-description'    => 'Cải thiện mức độ tương tác với nội dung tĩnh ngắn gọn và thông tin cho khán giả của bạn.',
                 'status'                        => 'Trạng Thái',
-                'themes'                        => 'Chủ Đề',
-                'title'                         => 'Chỉnh Sửa Chủ Đề',
+                'themes'                        => 'Giao diện trang chủ',
+                'title'                         => 'Chỉnh Sửa giao diện trang chủ',
                 'update-slider'                 => 'Cập Nhật Trình Chiếu',
                 'url'                           => 'URL',
                 'value'                         => 'Giá Trị: :value',
@@ -4033,7 +4033,7 @@ return [
         'layouts' => [
             'header' => [
                 'account-title' => 'Tài Khoản',
-                'app-version'   => 'Phiên bản : :version',
+                'app-version'   => '',
                 'logout'        => 'Đăng Xuất',
                 'my-account'    => 'Tài Khoản Của Tôi',
                 'notifications' => 'Thông Báo',
@@ -4101,7 +4101,7 @@ return [
                 'tax-categories'           => 'Danh Mục Thuế',
                 'tax-rates'                => 'Tỷ Lệ Thuế',
                 'taxes'                    => 'Thuế',
-                'themes'                   => 'Chủ Đề',
+                'themes'                   => 'Giao diện trang chủ',
                 'transactions'             => 'Giao Dịch',
                 'url-rewrites'             => 'Viết Lại URL',
                 'users'                    => 'Người Dùng',
@@ -4339,7 +4339,7 @@ return [
         'tax-categories'           => 'Danh Mục Thuế',
         'tax-rates'                => 'Tỷ Lệ Thuế',
         'taxes'                    => 'Thuế',
-        'themes'                   => 'Chủ Đề',
+        'themes'                   => 'Giao diện trang chủ',
         'transactions'             => 'Giao Dịch',
         'url-rewrites'             => 'Viết Lại URL',
         'users'                    => 'Người Dùng',
@@ -4482,5 +4482,4 @@ return [
             'tracking-number'            => 'Số Theo Dõi: :tracking_number',
         ],
     ],
-
 ];

@@ -16,8 +16,12 @@
     >
     <meta
         http-equiv="content-language"
-        content="{{ app()->getLocale() }}"
+        content="vi"
     >
+{{--    <meta--}}
+{{--        http-equiv="content-language"--}}
+{{--        content="{{ app()->getLocale() }}"--}}
+{{--    >--}}
 
     <meta
         name="viewport"
