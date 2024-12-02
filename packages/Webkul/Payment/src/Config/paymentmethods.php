@@ -3,8 +3,8 @@
 return [
     'cashondelivery'  => [
         'code'        => 'cashondelivery',
-        'title'       => 'Cash On Delivery',
-        'description' => 'Cash On Delivery',
+        'title'       => 'Thanh toán khi nhận hàng',
+        'description' => 'Thanh toán khi nhận hàng',
         'class'       => 'Webkul\Payment\Payment\CashOnDelivery',
         'active'      => true,
         'sort'        => 1,
@@ -12,8 +12,8 @@ return [
 
     'moneytransfer'   => [
         'code'        => 'moneytransfer',
-        'title'       => 'Money Transfer',
-        'description' => 'Money Transfer',
+        'title'       => 'Chuyển khoản',
+        'description' => 'Chuyển khoản',
         'class'       => 'Webkul\Payment\Payment\MoneyTransfer',
         'active'      => true,
         'sort'        => 2,
