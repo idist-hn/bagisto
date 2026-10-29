@@ -4,6 +4,7 @@ namespace Webkul\Shop\Http\Controllers\API;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Event;
 use Webkul\Customer\Repositories\CompareItemRepository;
 use Webkul\Product\Repositories\ProductRepository;
 use Webkul\Shop\Http\Resources\CompareItemResource;
@@ -47,17 +48,21 @@ class CompareController extends APIController
     /**
      * Method for customers to get products in comparison.
      *
-     * @return \Illuminate\Http\Resources\Json\JsonResource
+     * @return JsonResource
      */
     public function store()
     {
+        if (! auth()->guard('customer')->check()) {
+            abort(401, trans('shop::app.errors.401.title'));
+        }
+
         $this->validate(request(), [
             'product_id' => 'required|integer|exists:products,id',
         ]);
 
         $compareProduct = $this->compareItemRepository->findOneByField([
-            'customer_id'  => auth()->guard('customer')->user()->id,
-            'product_id'   => request()->input('product_id'),
+            'customer_id' => auth()->guard('customer')->id(),
+            'product_id' => request()->input('product_id'),
         ]);
 
         if ($compareProduct) {
@@ -66,10 +71,14 @@ class CompareController extends APIController
             ]))->response()->setStatusCode(Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $this->compareItemRepository->create([
-            'customer_id' => auth()->guard('customer')->user()->id,
-            'product_id'  => request()->input('product_id'),
+        Event::dispatch('customer.compare.create.before');
+
+        $compareProduct = $this->compareItemRepository->create([
+            'customer_id' => auth()->guard('customer')->id(),
+            'product_id' => request()->input('product_id'),
         ]);
+
+        Event::dispatch('customer.compare.create.after', $compareProduct);
 
         return new JsonResource([
             'message' => trans('shop::app.compare.item-add-success'),
@@ -81,10 +90,24 @@ class CompareController extends APIController
      */
     public function destroy(): JsonResource
     {
-        $success = $this->compareItemRepository->deleteWhere([
-            'product_id'  => request()->input('product_id'),
-            'customer_id' => auth()->guard('customer')->user()->id,
+        if (! auth()->guard('customer')->check()) {
+            abort(401, trans('shop::app.errors.401.title'));
+        }
+
+        $this->validate(request(), [
+            'product_id' => 'required|integer',
         ]);
+
+        $productId = request()->input('product_id');
+
+        Event::dispatch('customer.compare.delete.before', $productId);
+
+        $success = $this->compareItemRepository->deleteWhere([
+            'customer_id' => auth()->guard('customer')->id(),
+            'product_id' => $productId,
+        ]);
+
+        Event::dispatch('customer.compare.delete.after', $productId);
 
         if (! $success) {
             return new JsonResource([
@@ -104,7 +127,7 @@ class CompareController extends APIController
             ->get();
 
         return new JsonResource([
-            'data'    => CompareItemResource::collection($products),
+            'data' => CompareItemResource::collection($products),
             'message' => trans('shop::app.compare.remove-success'),
         ]);
     }
@@ -114,9 +137,17 @@ class CompareController extends APIController
      */
     public function destroyAll(): JsonResource
     {
+        if (! auth()->guard('customer')->check()) {
+            abort(401, trans('shop::app.errors.401.title'));
+        }
+
+        Event::dispatch('customer.compare.delete-all.before');
+
         $success = $this->compareItemRepository->deleteWhere([
-            'customer_id' => auth()->guard('customer')->user()->id,
+            'customer_id' => auth()->guard('customer')->id(),
         ]);
+
+        Event::dispatch('customer.compare.delete-all.after');
 
         if (! $success) {
             return new JsonResource([

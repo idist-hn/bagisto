@@ -2,50 +2,55 @@
 
 namespace Webkul\Core\Providers;
 
-use Elastic\Elasticsearch\Client as ElasticSearchClient;
+use Elastic\Elasticsearch\Client;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Debug\ExceptionHandler;
-use Illuminate\Foundation\AliasLoader;
+use Illuminate\Foundation\Console\DownCommand;
+use Illuminate\Foundation\Console\UpCommand;
+use Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
-use Webkul\Core\Acl;
-use Webkul\Core\Core;
-use Webkul\Core\ElasticSearch;
+use Webkul\Core\Console\Commands\BagistoVersion;
+use Webkul\Core\Console\Commands\ExchangeRateUpdate;
+use Webkul\Core\Console\Commands\InvoiceOverdueCron;
+use Webkul\Core\Console\Commands\StorageSync;
+use Webkul\Core\Console\Commands\TranslationsChecker;
+use Webkul\Core\Contracts\DatabaseGrammar;
+use Webkul\Core\Enums\SupportedDatabaseEnum;
 use Webkul\Core\Exceptions\Handler;
-use Webkul\Core\Facades\Acl as AclFacade;
-use Webkul\Core\Facades\Core as CoreFacade;
-use Webkul\Core\Facades\ElasticSearch as ElasticSearchFacade;
-use Webkul\Core\Facades\Menu as MenuFacade;
-use Webkul\Core\Facades\SystemConfig as SystemConfigFacade;
-use Webkul\Core\Menu;
-use Webkul\Core\SystemConfig;
+use Webkul\Core\Facades\ElasticSearch;
+use Webkul\Core\Filesystem\StorageConfigurator;
+use Webkul\Core\Helpers\Database\Grammar\MySqlGrammar;
+use Webkul\Core\Helpers\Database\Grammar\PgSqlGrammar;
 use Webkul\Core\View\Compilers\BladeCompiler;
 use Webkul\Theme\ViewRenderEventManager;
 
 class CoreServiceProvider extends ServiceProvider
 {
     /**
+     * Register services.
+     */
+    public function register(): void
+    {
+        include __DIR__.'/../Http/helpers.php';
+
+        $this->registerCommands();
+
+        $this->registerOverrides();
+
+        $this->registerDatabaseGrammar();
+    }
+
+    /**
      * Bootstrap services.
      */
     public function boot(): void
     {
-        include __DIR__.'/../Http/helpers.php';
+        $this->configureStorage();
 
         $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
 
         $this->loadTranslationsFrom(__DIR__.'/../Resources/lang', 'core');
-
-        $this->publishes([
-            dirname(__DIR__).'/Config/concord.php'       => config_path('concord.php'),
-            dirname(__DIR__).'/Config/repository.php'    => config_path('repository.php'),
-            dirname(__DIR__).'/Config/visitor.php'       => config_path('visitor.php'),
-            dirname(__DIR__).'/Config/elasticsearch.php' => config_path('elasticsearch.php'),
-        ]);
-
-        $this->app->register(EventServiceProvider::class);
-
-        $this->app->register(VisitorServiceProvider::class);
-
-        $this->app->bind(ExceptionHandler::class, Handler::class);
 
         $this->loadViewsFrom(__DIR__.'/../Resources/views', 'core');
 
@@ -57,85 +62,50 @@ class CoreServiceProvider extends ServiceProvider
             $viewRenderEventManager->addTemplate('core::blade.tracer.style');
         });
 
-        $this->app->extend('command.down', function () {
-            return new \Webkul\Core\Console\Commands\DownCommand;
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
+            $schedule->command('invoice:cron')->dailyAt('3:00');
+
+            $this->registerExchangeRateSchedule($schedule);
         });
 
-        $this->app->extend('command.up', function () {
-            return new \Webkul\Core\Console\Commands\UpCommand;
-        });
+        $this->app->register(EventServiceProvider::class);
+        $this->app->register(DynamicMailServiceProvider::class);
+    }
 
-        /**
-         * Image Cache route
-         */
-        if (is_string(config('imagecache.route'))) {
-            $filenamePattern = '[ \w\\.\\/\\-\\@\(\)\=]+';
+    /**
+     * Point the application at the disk chosen in Configure -> File Management, before anything
+     * resolves storage, so a store serves from the disk it was told to use.
+     */
+    protected function configureStorage(): void
+    {
+        app(StorageConfigurator::class)->configure();
+    }
 
-            /**
-             * Route to access template applied image file
-             */
-            $this->app['router']->get(config('imagecache.route').'/{template}/{filename}', [
-                'uses' => 'Webkul\Core\ImageCache\Controller@getResponse',
-                'as'   => 'imagecache',
-            ])->where(['filename' => $filenamePattern]);
+    /**
+     * Register the exchange rate update schedule based on core configuration.
+     *
+     * Skipped when the database is not yet available, as during installation.
+     */
+    protected function registerExchangeRateSchedule(Schedule $schedule): void
+    {
+        try {
+            if (! core()->getConfigData('general.exchange_rates.schedule.enabled')) {
+                return;
+            }
+
+            $frequency = core()->getConfigData('general.exchange_rates.schedule.frequency') ?: 'daily';
+
+            $time = core()->getConfigData('general.exchange_rates.schedule.time') ?: '00:00';
+
+            $command = $schedule->command('exchange-rate:update');
+
+            match ($frequency) {
+                'weekly' => $command->weeklyOn(1, $time),
+                'monthly' => $command->monthlyOn(1, $time),
+                default => $command->dailyAt($time),
+            };
+        } catch (\Exception) {
         }
-    }
-
-    /**
-     * Register services.
-     */
-    public function register(): void
-    {
-        $this->registerFacades();
-
-        $this->registerCommands();
-
-        $this->registerBladeCompiler();
-    }
-
-    /**
-     * Register Bouncer as a singleton.
-     */
-    protected function registerFacades(): void
-    {
-        $loader = AliasLoader::getInstance();
-
-        $loader->alias('core', CoreFacade::class);
-
-        $loader->alias('menu', MenuFacade::class);
-
-        $loader->alias('acl', AclFacade::class);
-
-        $loader->alias('system_config', SystemConfigFacade::class);
-
-        $this->app->singleton('core', function () {
-            return app()->make(Core::class);
-        });
-
-        $this->app->singleton('menu', function () {
-            return app()->make(Menu::class);
-        });
-
-        $this->app->singleton('acl', function () {
-            return app()->make(Acl::class);
-        });
-
-        $this->app->singleton('system_config', function () {
-            return app()->make(SystemConfig::class);
-        });
-
-        /**
-         * Register ElasticSearch as a singleton.
-         */
-        $this->app->singleton('elasticsearch', function () {
-            return new ElasticSearch;
-        });
-
-        $loader->alias('elasticsearch', ElasticSearchFacade::class);
-
-        $this->app->singleton(ElasticSearchClient::class, function () {
-            return app()->make('elasticsearch')->connection();
-        });
     }
 
     /**
@@ -145,26 +115,64 @@ class CoreServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->commands([
-                \Webkul\Core\Console\Commands\BagistoPublish::class,
-                \Webkul\Core\Console\Commands\BagistoVersion::class,
-                \Webkul\Core\Console\Commands\ExchangeRateUpdate::class,
-                \Webkul\Core\Console\Commands\InvoiceOverdueCron::class,
+                BagistoVersion::class,
+                ExchangeRateUpdate::class,
+                InvoiceOverdueCron::class,
+                StorageSync::class,
+                TranslationsChecker::class,
             ]);
         }
-
-        $this->commands([
-            \Webkul\Core\Console\Commands\DownChannelCommand::class,
-            \Webkul\Core\Console\Commands\UpChannelCommand::class,
-        ]);
     }
 
     /**
-     * Register the Blade compiler implementation.
+     * Register the overrides.
      */
-    public function registerBladeCompiler(): void
+    protected function registerOverrides(): void
     {
-        $this->app->singleton('blade.compiler', function ($app) {
-            return new BladeCompiler($app['files'], $app['config']['view.compiled']);
-        });
+        $this->app->extend(
+            UpCommand::class,
+            fn () => new \Webkul\Core\Console\Commands\UpCommand
+        );
+
+        $this->app->extend(
+            DownCommand::class,
+            fn () => new \Webkul\Core\Console\Commands\DownCommand
+        );
+
+        $this->app->bind(
+            ExceptionHandler::class,
+            Handler::class
+        );
+
+        $this->app->bind(
+            PreventRequestsDuringMaintenance::class,
+            fn ($app) => new \Webkul\Core\Http\Middleware\PreventRequestsDuringMaintenance($app)
+        );
+
+        $this->app->singleton(
+            Client::class,
+            fn () => ElasticSearch::getFacadeApplication()->connection()
+        );
+
+        $this->app->singleton(
+            'blade.compiler',
+            fn ($app) => new BladeCompiler($app['files'], $app['config']['view.compiled'])
+        );
+    }
+
+    /**
+     * Register the database grammar abstraction based on the active driver.
+     */
+    protected function registerDatabaseGrammar(): void
+    {
+        $this->app->singleton(
+            DatabaseGrammar::class,
+            fn ($app) => match ($app['db']->getDriverName()) {
+                SupportedDatabaseEnum::PGSQL->value => new PgSqlGrammar,
+                SupportedDatabaseEnum::MYSQL->value,
+                SupportedDatabaseEnum::MARIADB->value => new MySqlGrammar,
+                default => new MySqlGrammar,
+            }
+        );
     }
 }

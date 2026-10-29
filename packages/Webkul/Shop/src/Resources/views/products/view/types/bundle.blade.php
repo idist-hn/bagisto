@@ -58,7 +58,7 @@
                 <x-shop::form.control-group>
                     <!-- Dropdown Options Container -->
                     <x-shop::form.control-group.label
-                        class="!mt-0 max-sm:!mb-2.5"
+                        class="mt-0! max-sm:mb-2.5!"
                         ::class="{ 'required': Boolean(option.is_required) }"
                     >
                         @{{ option.label }}
@@ -83,7 +83,27 @@
                                 v-for="product in option.products"
                                 :value="product.id"
                             >
-                                @{{ product.name + ' + ' + product.price.final.formatted_price }}
+                                @{{ product.name }}
+
+                                <div
+                                    class="flex gap-2.5"
+                                    v-if="product.price.regular.price != product.price.final.price"
+                                >
+                                    <span class="text-black">+</span>
+
+                                    <span class="text-zinc-500 line-through max-sm:text-sm">
+                                        (@{{ product.price.regular.formatted_price }})
+                                    </span>
+
+                                    <span class="text-black">@{{ product.price.final.formatted_price }}</span>
+                                </div>
+
+                                <span
+                                    class="text-black"
+                                    v-else
+                                >
+                                    @{{ '+ ' + product.price.final.formatted_price }}
+                                </span>
                             </option>
                         </x-shop::form.control-group.control>
                     </template>
@@ -131,12 +151,28 @@
                                 />
 
                                 <label
-                                    class="cursor-pointer text-zinc-500 max-sm:text-sm"
+                                    class="flex cursor-pointer gap-2 text-zinc-500 max-sm:text-sm"
                                     :for="'bundle_options[' + option.id + '][' + index + ']'"
                                 >
                                     @{{ product.name }}
 
-                                    <span class="text-black">
+                                    <div
+                                        class="flex gap-2.5"
+                                        v-if="product.price.regular.price != product.price.final.price"
+                                    >
+                                        <span class="text-black">+</span>
+
+                                        <span class="text-zinc-500 line-through max-sm:text-sm">
+                                            @{{ product.price.regular.formatted_price }}
+                                        </span>
+    
+                                        <span class="text-black">@{{ product.price.final.formatted_price }}</span>
+                                    </div>
+
+                                    <span
+                                        class="text-black"
+                                        v-else
+                                    >
                                         @{{ '+ ' + product.price.final.formatted_price }}
                                     </span>
                                 </label>
@@ -164,7 +200,27 @@
                                 :value="product.id"
                                 :selected="value && value.includes(product.id)"
                             >
-                                @{{ product.name + ' + ' + product.price.final.formatted_price }}
+                                @{{ product.name }}
+
+                                <div
+                                    class="flex gap-2.5"
+                                    v-if="product.price.regular.price != product.price.final.price"
+                                >
+                                    <span class="text-black">+</span>
+
+                                    <span class="text-zinc-500 line-through max-sm:text-sm">
+                                        (@{{ product.price.regular.formatted_price }})
+                                    </span>
+
+                                    <span class="text-black">@{{ product.price.final.formatted_price }}</span>
+                                </div>
+
+                                <span
+                                    class="text-black"
+                                    v-else
+                                >
+                                    @{{ '+ ' + product.price.final.formatted_price }}
+                                </span>
                             </option>
                         </x-shop::form.control-group.control>
                     </template>
@@ -188,12 +244,28 @@
                                 />
 
                                 <label
-                                    class="cursor-pointer text-zinc-500 max-sm:text-sm"
+                                    class="flex cursor-pointer gap-2 text-zinc-500 max-sm:text-sm"
                                     :for="'bundle_options[' + option.id + '][' + index + ']'"
                                 >
                                     @{{ product.name }}
 
-                                    <span class="text-black">
+                                    <span
+                                        class="flex gap-2"
+                                        v-if="product.price.regular.price != product.price.final.price"
+                                    >
+                                        <span class="text-black">+</span>
+
+                                        <span class="text-zinc-500 line-through max-sm:text-sm">
+                                            (@{{ product.price.regular.formatted_price }})
+                                        </span>
+
+                                        <span class="text-black">@{{ product.price.final.formatted_price }}</span>
+                                    </span>
+
+                                    <span
+                                        class="text-black"
+                                        v-else
+                                    >
                                         @{{ '+ ' + product.price.final.formatted_price }}
                                     </span>
                                 </label>
@@ -208,7 +280,7 @@
                     <x-shop::quantity-changer
                         ::name="'bundle_option_qty[' + option?.id + ']'"
                         ::value="productQty"
-                        class="mt-5 w-max gap-x-4 rounded-xl !border-zinc-200 px-4 py-1.5 max-sm:my-4"
+                        class="mt-5 w-max gap-x-4 rounded-xl border-zinc-200! px-4 py-1.5 max-sm:my-4"
                         @change="qtyUpdated($event)"
                     />
                 </template>
@@ -223,7 +295,7 @@
 
                 data: function() {
                     return {
-                        config: @json(app('Webkul\Product\Helpers\BundleOption')->getBundleConfig($product)),
+                        config: @json(app(\Webkul\Product\Helpers\BundleOption::class)->getBundleConfig($product)),
 
                         options: [],
 

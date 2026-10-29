@@ -5,7 +5,9 @@ namespace Webkul\Product\Type;
 use Webkul\Attribute\Repositories\AttributeRepository;
 use Webkul\Checkout\Models\CartItem;
 use Webkul\Customer\Repositories\CustomerRepository;
+use Webkul\Product\Contracts\Product;
 use Webkul\Product\DataTypes\CartItemValidationResult;
+use Webkul\Product\Exceptions\InsufficientProductInventoryException;
 use Webkul\Product\Helpers\BundleOption;
 use Webkul\Product\Helpers\Indexers\Price\Bundle as BundleIndexer;
 use Webkul\Product\Repositories\ProductAttributeValueRepository;
@@ -102,7 +104,7 @@ class Bundle extends AbstractType
      *
      * @param  int  $id
      * @param  array  $attributes
-     * @return \Webkul\Product\Contracts\Product
+     * @return Product
      */
     public function update(array $data, $id, $attributes = [])
     {
@@ -127,7 +129,7 @@ class Bundle extends AbstractType
     {
         parent::copyRelationships($product);
 
-        $attributesToSkip = config('products.skipAttributesOnCopy') ?? [];
+        $attributesToSkip = config('products.copy.skip_attributes') ?? [];
 
         if (in_array('bundle_options', $attributesToSkip)) {
             return;
@@ -179,24 +181,24 @@ class Bundle extends AbstractType
         return [
             'from' => [
                 'regular' => [
-                    'price'           => core()->convertPrice($regularMinimalPrice = $this->getRegularMinimalPrice()),
+                    'price' => core()->convertPrice($regularMinimalPrice = $this->getRegularMinimalPrice()),
                     'formatted_price' => core()->currency($regularMinimalPrice),
                 ],
 
-                'final'   => [
-                    'price'           => core()->convertPrice($minimalPrice = $this->getMinimalPrice()),
+                'final' => [
+                    'price' => core()->convertPrice($minimalPrice = $this->getMinimalPrice()),
                     'formatted_price' => core()->currency($minimalPrice),
                 ],
             ],
 
             'to' => [
                 'regular' => [
-                    'price'           => core()->convertPrice($regularMaximumPrice = $this->getRegularMaximumPrice()),
+                    'price' => core()->convertPrice($regularMaximumPrice = $this->getRegularMaximumPrice()),
                     'formatted_price' => core()->currency($regularMaximumPrice),
                 ],
 
-                'final'   => [
-                    'price'           => core()->convertPrice($maximumPrice = $this->getMaximumPrice()),
+                'final' => [
+                    'price' => core()->convertPrice($maximumPrice = $this->getMaximumPrice()),
                     'formatted_price' => core()->currency($maximumPrice),
                 ],
             ],
@@ -212,7 +214,7 @@ class Bundle extends AbstractType
     {
         return view('shop::products.prices.bundle', [
             'product' => $this->product,
-            'prices'  => $this->getProductPrices(),
+            'prices' => $this->getProductPrices(),
         ])->render();
     }
 
@@ -221,33 +223,45 @@ class Bundle extends AbstractType
      *
      * @param  array  $data
      * @return array|string
+     *
+     * @throws InsufficientProductInventoryException
      */
     public function prepareForCart($data)
     {
-        $bundleQuantity = parent::handleQuantity((int) $data['quantity']);
+        $bundleQuantity = parent::handleQuantity((int) ($data['quantity'] ?? 1));
 
         if (empty($data['bundle_options'])) {
             return trans('product::app.checkout.cart.missing-options');
         }
 
-        $data['bundle_options'] = array_filter($this->validateBundleOptionForCart($data['bundle_options']));
+        $data['bundle_options'] = array_filter($this->validateBundleOptionForCart(
+            $this->ownBundleOptions($data['bundle_options'])
+        ));
 
         if (empty($data['bundle_options'])) {
             return trans('product::app.checkout.cart.missing-options');
         }
 
         if (! $this->haveSufficientQuantity($data['quantity'])) {
-            return trans('product::app.checkout.cart.inventory-warning');
+            throw new InsufficientProductInventoryException(trans('product::app.checkout.cart.inventory-warning'));
         }
 
         $products = parent::prepareForCart($data);
 
+        if (gettype($products) == 'string') {
+            return $products;
+        }
+
         foreach ($this->getCartChildProducts($data) as $productId => $data) {
             $product = $this->productRepository->find($productId);
 
+            if ($product->type !== 'simple') {
+                return trans('product::app.checkout.cart.selected-products-simple');
+            }
+
             /* need to check each individual quantity as well if don't have then show error */
             if (! $product->getTypeInstance()->haveSufficientQuantity($data['quantity'] * $bundleQuantity)) {
-                return trans('product::app.checkout.cart.inventory-warning');
+                throw new InsufficientProductInventoryException(trans('product::app.checkout.cart.inventory-warning'));
             }
 
             if (! $product->getTypeInstance()->isSaleable()) {
@@ -263,9 +277,6 @@ class Bundle extends AbstractType
             }
 
             $cartProduct[0]['parent_id'] = $this->product->id;
-            $cartProduct[0]['quantity'] = $data['quantity'];
-            $cartProduct[0]['total_weight'] = $cartProduct[0]['weight'] * $data['quantity'];
-            $cartProduct[0]['base_total_weight'] = $cartProduct[0]['weight'] * $data['quantity'];
 
             $products = array_merge($products, $cartProduct);
 
@@ -277,10 +288,12 @@ class Bundle extends AbstractType
             $products[0]['total_incl_tax'] += $cartProduct[0]['total'];
             $products[0]['base_total'] += $cartProduct[0]['base_total'];
             $products[0]['base_total_incl_tax'] += $cartProduct[0]['base_total'];
-            $products[0]['weight'] += ($cartProduct[0]['weight'] * $products[0]['quantity']);
-            $products[0]['total_weight'] += ($cartProduct[0]['total_weight'] * $products[0]['quantity']);
-            $products[0]['base_total_weight'] += ($cartProduct[0]['base_total_weight'] * $products[0]['quantity']);
+            $products[0]['weight'] += $cartProduct[0]['total_weight'];
         }
+
+        $products[0]['total_weight'] = $products[0]['base_total_weight'] = $products[0]['weight'] * $products[0]['quantity'];
+
+        $products[0]['total'] = $products[0]['base_total'] = $products[0]['base_total'] * $products[0]['quantity'];
 
         return $products;
     }
@@ -302,7 +315,7 @@ class Bundle extends AbstractType
                 }
 
                 $optionProduct = $this->productBundleOptionProductRepository->findOneWhere([
-                    'id'                       => $optionProductId,
+                    'id' => $optionProductId,
                     'product_bundle_option_id' => $optionId,
                 ]);
 
@@ -310,12 +323,14 @@ class Bundle extends AbstractType
                     continue;
                 }
 
-                $qty = $data['bundle_option_qty'][$optionId] ?? $optionProduct->qty;
+                $qty = $optionProduct->is_user_defined
+                    ? ($data['bundle_option_qty'][$optionId] ?? $optionProduct->qty)
+                    : $optionProduct->qty;
 
                 if (! isset($products[$optionProduct->product_id])) {
                     $products[$optionProduct->product_id] = [
                         'product_id' => $optionProduct->product_id,
-                        'quantity'   => $qty,
+                        'quantity' => $qty,
                     ];
                 } else {
                     $products[$optionProduct->product_id] = array_merge($products[$optionProduct->product_id], [
@@ -349,10 +364,24 @@ class Bundle extends AbstractType
     }
 
     /**
+     * The posted options this product actually owns, so a selection cannot be priced by an
+     * option belonging to another bundle.
+     */
+    public function ownBundleOptions(array $bundleOptions): array
+    {
+        $ownIds = $this->product->bundle_options->pluck('id')->all();
+
+        return array_filter(
+            $bundleOptions,
+            fn ($optionId) => in_array((int) $optionId, $ownIds, true),
+            ARRAY_FILTER_USE_KEY
+        );
+    }
+
+    /**
      * Remove invalid options from add to cart request.
      *
      * @param  array  $data
-     * @return array
      */
     public function validateBundleOptionForCart($data)
     {
@@ -416,8 +445,8 @@ class Bundle extends AbstractType
             if (count($labels)) {
                 $data['attributes'][] = [
                     'attribute_name' => $option->label,
-                    'option_id'      => $option->id,
-                    'option_label'   => implode(', ', $labels),
+                    'option_id' => $option->id,
+                    'option_label' => implode(', ', $labels),
                 ];
             }
         }
@@ -549,5 +578,33 @@ class Bundle extends AbstractType
     public function getPriceIndexer()
     {
         return app(BundleIndexer::class);
+    }
+
+    /**
+     * Returns validation rules.
+     *
+     * @return array
+     */
+    public function getTypeValidationRules()
+    {
+        return [
+            'bundle_options' => 'array',
+            'bundle_options' => function ($attribute, $value, $fail) {
+                $associatedProductIds = collect($value)
+                    ->pluck('products')
+                    ->flatten(1)
+                    ->pluck('product_id')
+                    ->toArray();
+
+                $products = $this->productRepository->findWhereIn('id', $associatedProductIds)
+                    ->pluck('type')
+                    ->filter(fn ($type) => $type !== 'simple')
+                    ->count();
+
+                if ($products) {
+                    $fail(trans('product::app.checkout.cart.selected-products-simple'));
+                }
+            },
+        ];
     }
 }

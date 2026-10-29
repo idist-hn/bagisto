@@ -51,11 +51,11 @@
 
             {!! view_render_event('bagisto.admin.settings.taxes.rates.edit.edit_form_controls.before', ['taxRate' => $taxRate]) !!}
 
-            <!-- Tax Rates Informations -->
+            <!-- Tax Rates Information's -->
             <div class="mt-3.5 flex gap-2.5 max-xl:flex-wrap">
                 <!-- Left component -->
                 <div class="flex flex-1 flex-col gap-2 max-xl:flex-auto">
-                    <div class="box-shadow rounded bg-white p-4 dark:bg-gray-900">
+                    <div class="box-shadow rounded-sm bg-white p-4 dark:bg-gray-900">
                         <p class="mb-4 text-base font-semibold text-gray-800 dark:text-white">
                             @lang('admin::app.settings.taxes.rates.create.general')
                         </p>
@@ -147,7 +147,7 @@
                                 <x-admin::form.control-group.control
                                     type="text"
                                     name="state"
-                                    value="{{ old('state') }}"
+                                    :value="old('state') ?? $taxRate->state "
                                     :label="trans('admin::app.settings.taxes.rates.edit.state')"
                                     :placeholder="trans('admin::app.settings.taxes.rates.edit.state')"
                                 />
@@ -157,7 +157,7 @@
                         </x-admin::form.control-group>
 
                         <!-- Tax Rate -->
-                        <x-admin::form.control-group class="!mb-0">
+                        <x-admin::form.control-group class="mb-0!">
                             <x-admin::form.control-group.label class="required">
                                 @lang('admin::app.settings.taxes.rates.edit.tax-rate')
                             </x-admin::form.control-group.label>
@@ -165,7 +165,7 @@
                             <x-admin::form.control-group.control
                                 type="text"
                                 name="tax_rate"
-                                rules="required"
+                                rules="required|decimal|min:0|max:100"
                                 value="{{ old('tax_rate') ?: $taxRate->tax_rate }}"
                                 :label="trans('admin::app.settings.taxes.rates.edit.tax-rate')"
                                 :placeholder="trans('admin::app.settings.taxes.rates.edit.tax-rate')"
@@ -177,7 +177,7 @@
                 </div>
             
                 <!-- Right sub-component -->
-                <div class="flex w-[360px] max-w-full flex-col gap-2 max-sm:w-full">
+                <div class="flex w-90 max-w-full flex-col gap-2 max-sm:w-full">
 
                     {!! view_render_event('bagisto.admin.settings.taxes.rates.edit.card.accordion.basic_settings.before', ['taxRate' => $taxRate]) !!}
 
@@ -242,7 +242,7 @@
 
                             @else
                                 <!-- Zip Code -->
-                                <x-admin::form.control-group class="!mb-0">
+                                <x-admin::form.control-group class="mb-0!">
                                     <x-admin::form.control-group.label>
                                         @lang('admin::app.settings.taxes.rates.edit.zip-code')
                                     </x-admin::form.control-group.label>

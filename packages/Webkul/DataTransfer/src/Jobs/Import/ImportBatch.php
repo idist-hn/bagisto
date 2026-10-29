@@ -9,10 +9,11 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Webkul\DataTransfer\Helpers\Import as ImportHelper;
+use Webkul\DataTransfer\Jobs\Concerns\RetriesOnDeadlock;
 
 class ImportBatch implements ShouldQueue
 {
-    use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Batchable, Dispatchable, InteractsWithQueue, Queueable, RetriesOnDeadlock, SerializesModels;
 
     /**
      * Create a new job instance.
@@ -26,7 +27,8 @@ class ImportBatch implements ShouldQueue
     }
 
     /**
-     * Execute the job.
+     * Execute the job. Batches write to the same tables side by side, so one is eventually a
+     * deadlock victim, and the tallies reset per attempt because importBatch() accumulates them.
      *
      * @return void
      */
@@ -36,6 +38,14 @@ class ImportBatch implements ShouldQueue
             ->setImport($this->importBatch->import)
             ->getTypeImporter();
 
-        $typeImported->importBatch($this->importBatch);
+        try {
+            $this->retryOnDeadlock(function () use ($typeImported) {
+                $typeImported->resetItemCounts();
+
+                $typeImported->importBatch($this->importBatch);
+            });
+        } finally {
+            $typeImported->releaseBatchMemory();
+        }
     }
 }

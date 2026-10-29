@@ -3,9 +3,12 @@
 namespace Webkul\Admin\Http\Controllers\Settings\Tax;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Event;
+use Illuminate\View\View;
 use Webkul\Admin\DataGrids\Settings\TaxRateDataGrid;
 use Webkul\Admin\Http\Controllers\Controller;
+use Webkul\Admin\Http\Requests\TaxRateRequest;
 use Webkul\Tax\Repositories\TaxRateRepository;
 
 class TaxRateController extends Controller
@@ -20,7 +23,7 @@ class TaxRateController extends Controller
     /**
      * Display a listing resource for the available tax rates.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function index()
     {
@@ -34,7 +37,7 @@ class TaxRateController extends Controller
     /**
      * Display a create form for tax rate.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function create()
     {
@@ -48,23 +51,13 @@ class TaxRateController extends Controller
     /**
      * Create the tax rate.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function store()
+    public function store(TaxRateRequest $request)
     {
-        $this->validate(request(), [
-            'identifier' => 'required|string|unique:tax_rates,identifier',
-            'is_zip'     => 'sometimes',
-            'zip_code'   => 'nullable',
-            'zip_from'   => 'nullable|required_with:is_zip',
-            'zip_to'     => 'nullable|required_with:is_zip,zip_from',
-            'country'    => 'required|string',
-            'tax_rate'   => 'required|numeric|min:0.0001',
-        ]);
-
         Event::dispatch('tax.rate.create.before');
 
-        $taxRate = $this->taxRateRepository->create(request()->only([
+        $taxRate = $this->taxRateRepository->create($request->only([
             'identifier',
             'country',
             'state',
@@ -85,7 +78,7 @@ class TaxRateController extends Controller
     /**
      * Show the edit form for the previously created tax rates.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function edit(int $id)
     {
@@ -97,23 +90,13 @@ class TaxRateController extends Controller
     /**
      * Edit the previous tax rate.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function update(int $id)
+    public function update(TaxRateRequest $request, int $id)
     {
-        $this->validate(request(), [
-            'identifier' => 'required|string|unique:tax_rates,identifier,'.$id,
-            'is_zip'     => 'sometimes',
-            'zip_code'   => 'nullable',
-            'zip_from'   => 'nullable|required_with:is_zip',
-            'zip_to'     => 'nullable|required_with:is_zip,zip_from',
-            'country'    => 'required|string',
-            'tax_rate'   => 'required|numeric|min:0.0001',
-        ]);
-
         Event::dispatch('tax.rate.update.before', $id);
 
-        $taxRate = $this->taxRateRepository->update(request()->only([
+        $taxRate = $this->taxRateRepository->update($request->only([
             'identifier',
             'country',
             'state',

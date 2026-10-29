@@ -62,11 +62,12 @@
                     {!! view_render_event('bagisto.admin.marketing.promotions.cart_rules.create.card.general.before') !!}
 
                     <!-- General -->
-                    <div class="box-shadow rounded bg-white p-4 dark:bg-gray-900">
+                    <div class="box-shadow rounded-sm bg-white p-4 dark:bg-gray-900">
                         <p class="mb-4 text-base font-semibold text-gray-800 dark:text-white">
                             @lang('admin::app.marketing.promotions.cart-rules.create.general')
                         </p>
 
+                        <!-- Name -->
                         <x-admin::form.control-group>
                             <x-admin::form.control-group.label class="required">
                                 @lang('admin::app.marketing.promotions.cart-rules.create.name')
@@ -85,6 +86,7 @@
                             <x-admin::form.control-group.error control-name="name" />
                         </x-admin::form.control-group>
 
+                        <!-- Description -->
                         <x-admin::form.control-group>
                             <x-admin::form.control-group.label>
                                 @lang('admin::app.marketing.promotions.cart-rules.create.description')
@@ -103,6 +105,7 @@
                             <x-admin::form.control-group.error control-name="description" />
                         </x-admin::form.control-group>
 
+                        <!-- Coupon Type -->
                         <x-admin::form.control-group>
                             <x-admin::form.control-group.label class="required">
                                 @lang('admin::app.marketing.promotions.cart-rules.create.coupon-type')
@@ -130,6 +133,7 @@
                         </x-admin::form.control-group>
 
                         <template v-if="parseInt(couponType)">
+                            <!-- Auto Generate Coupon -->
                             <x-admin::form.control-group>
                                 <x-admin::form.control-group.label class="required">
                                     @lang('admin::app.marketing.promotions.cart-rules.create.auto-generate-coupon')
@@ -154,8 +158,16 @@
                                 </x-admin::form.control-group.control>
 
                                 <x-admin::form.control-group.error control-name="use_auto_generation" />
+
+                                <p
+                                    v-if="parseInt(useAutoGeneration)"
+                                    class="mt-1 block text-xs italic leading-5 text-gray-600 dark:text-gray-300"
+                                >
+                                    @lang('admin::app.marketing.promotions.cart-rules.create.auto-generate-info')
+                                </p>
                             </x-admin::form.control-group>
 
+                            <!-- Coupon Code -->
                             <x-admin::form.control-group v-if="! parseInt(useAutoGeneration)">
                                 <x-admin::form.control-group.label class="required">
                                     @lang('admin::app.marketing.promotions.cart-rules.create.coupon-code')
@@ -173,6 +185,7 @@
                                 <x-admin::form.control-group.error control-name="coupon_code" />
                             </x-admin::form.control-group>
 
+                            <!-- Uses Per Coupon -->
                             <x-admin::form.control-group>
                                 <x-admin::form.control-group.label>
                                     @lang('admin::app.marketing.promotions.cart-rules.create.uses-per-coupon')
@@ -191,6 +204,7 @@
                             </x-admin::form.control-group>
                         </template>
 
+                        <!-- Uses Per Customer -->
                         <x-admin::form.control-group>
                             <x-admin::form.control-group.label>
                                 @lang('admin::app.marketing.promotions.cart-rules.create.uses-per-customer')
@@ -200,16 +214,17 @@
                                 type="text"
                                 id="usage_per_customer"
                                 name="usage_per_customer"
+                                rules="numeric"
                                 :label="trans('admin::app.marketing.promotions.cart-rules.create.uses-per-customer')"
                                 :placeholder="trans('admin::app.marketing.promotions.cart-rules.create.uses-per-customer')"
                             />
 
                             <x-admin::form.control-group.error control-name="usage_per_customer" />
-                        </x-admin::form.control-group>
 
-                        <p class="text-sm text-gray-500">
-                            @lang('admin::app.marketing.promotions.cart-rules.create.uses-per-customer-control-info')
-                        </p>
+                            <p class="mt-1 block text-xs italic leading-5 text-gray-600 dark:text-gray-300">
+                                @lang('admin::app.marketing.promotions.cart-rules.create.uses-per-customer-control-info')
+                            </p>
+                        </x-admin::form.control-group>
                     </div>
 
                     {!! view_render_event('bagisto.admin.marketing.promotions.cart_rules.create.card.general.after') !!}
@@ -217,13 +232,14 @@
                     {!! view_render_event('bagisto.admin.marketing.promotions.cart_rules.create.card.conditions.before') !!}
 
                     <!-- Conditions -->
-                    <div class="box-shadow rounded bg-white p-4 dark:bg-gray-900">
+                    <div class="box-shadow rounded-sm bg-white p-4 dark:bg-gray-900">
                         <div class="mb-8 flex items-center justify-between gap-4">
                             <p class="text-base font-semibold text-gray-800 dark:text-white">
                                 @lang('admin::app.marketing.promotions.cart-rules.create.conditions')
                             </p>
 
-                            <x-admin::form.control-group class="!mb-0">
+                            <!-- Condition Type -->
+                            <x-admin::form.control-group class="mb-0!">
                                 <x-admin::form.control-group.label>
                                     @lang('admin::app.marketing.promotions.cart-rules.create.condition-type')
                                 </x-admin::form.control-group.label>
@@ -273,224 +289,270 @@
                     {!! view_render_event('bagisto.admin.marketing.promotions.cart_rules.create.card.conditions.before') !!}
 
                     <!-- Action -->
-                    <div class="box-shadow rounded bg-white p-4 dark:bg-gray-900">
+                    <div class="box-shadow rounded-sm bg-white p-4 dark:bg-gray-900">
                         <div class="grid gap-1.5">
                             <p class="mb-4 text-base font-semibold text-gray-800 dark:text-white">
                                 @lang('admin::app.marketing.promotions.cart-rules.create.actions')
                             </p>
 
+                            <!-- Action Type -->
+                            <x-admin::form.control-group>
+                                <x-admin::form.control-group.label class="required">
+                                    @lang('admin::app.marketing.promotions.cart-rules.create.action-type')
+                                </x-admin::form.control-group.label>
+
+                                <x-admin::form.control-group.control
+                                    type="select"
+                                    id="action_type"
+                                    name="action_type"
+                                    rules="required"
+                                    v-model="actionType"
+                                    :label="trans('admin::app.marketing.promotions.cart-rules.create.action-type')"
+                                    :placeholder="trans('admin::app.marketing.promotions.cart-rules.create.action-type')"
+                                >
+                                    <option
+                                        value="by_percent"
+                                        {{ old('action_type') == 'by_percent' ? 'selected' : '' }}
+                                    >
+                                        @lang('admin::app.marketing.promotions.cart-rules.create.percentage-product-price')
+                                    </option>
+
+                                    <option
+                                        value="by_fixed"
+                                        {{ old('action_type') == 'by_fixed' ? 'selected' : '' }}
+                                    >
+                                        @lang('admin::app.marketing.promotions.cart-rules.create.fixed-amount')
+                                    </option>
+
+                                    <option
+                                        value="cart_fixed"
+                                        {{ old('action_type') == 'cart_fixed' ? 'selected' : '' }}
+                                    >
+                                        @lang('admin::app.marketing.promotions.cart-rules.create.fixed-amount-whole-cart')
+                                    </option>
+
+                                    <option
+                                        value="buy_x_get_y"
+                                        {{ old('action_type') == 'buy_x_get_y' ? 'selected' : '' }}
+                                    >
+                                        @lang('admin::app.marketing.promotions.cart-rules.create.buy-x-get-y-free')
+                                    </option>
+                                </x-admin::form.control-group.control>
+
+                                <x-admin::form.control-group.error control-name="action_type" />
+
+                                <p class="mt-1 block text-xs italic leading-5 text-gray-600 dark:text-gray-300">
+                                    <span v-if="actionType === 'by_percent'">@lang('admin::app.marketing.promotions.cart-rules.create.action-type-info-by-percent')</span>
+                                    <span v-else-if="actionType === 'by_fixed'">@lang('admin::app.marketing.promotions.cart-rules.create.action-type-info-by-fixed')</span>
+                                    <span v-else-if="actionType === 'cart_fixed'">@lang('admin::app.marketing.promotions.cart-rules.create.action-type-info-cart-fixed')</span>
+                                    <span v-else-if="actionType === 'buy_x_get_y'">@lang('admin::app.marketing.promotions.cart-rules.create.action-type-info-buy-x-get-y')</span>
+                                </p>
+                            </x-admin::form.control-group>
+
                             <div class="flex gap-4 max-sm:flex-wrap">
-                                <div class="w-full">
-                                    <x-admin::form.control-group>
-                                        <x-admin::form.control-group.label class="required">
-                                            @lang('admin::app.marketing.promotions.cart-rules.create.action-type')
-                                        </x-admin::form.control-group.label>
+                                <!-- Discount Amount (label varies by action type) -->
+                                <x-admin::form.control-group class="w-full">
+                                    <x-admin::form.control-group.label class="required">
+                                        <span v-if="actionType === 'by_percent'">@lang('admin::app.marketing.promotions.cart-rules.create.discount-percent')</span>
+                                        <span v-else-if="actionType === 'buy_x_get_y'">@lang('admin::app.marketing.promotions.cart-rules.create.free-quantity')</span>
+                                        <span v-else>@lang('admin::app.marketing.promotions.cart-rules.create.discount-amount')</span>
+                                    </x-admin::form.control-group.label>
 
-                                        <x-admin::form.control-group.control
-                                            type="select"
-                                            id="action_type"
-                                            name="action_type"
-                                            rules="required"
-                                            v-model="actionType"
-                                            :label="trans('admin::app.marketing.promotions.cart-rules.create.action-type')"
-                                            :placeholder="trans('admin::app.marketing.promotions.cart-rules.create.action-type')"
-                                        >
-                                            <option
-                                                value="by_percent"
-                                                {{ old('action_type') == 'by_percent' ? 'selected' : '' }}
-                                            >
-                                                @lang('admin::app.marketing.promotions.cart-rules.create.percentage-product-price')
-                                            </option>
+                                    <x-admin::form.control-group.control
+                                        type="text"
+                                        id="discount_amount"
+                                        name="discount_amount"
+                                        rules="required"
+                                        :value="old('discount_amount', 0)"
+                                        :label="trans('admin::app.marketing.promotions.cart-rules.create.discount-amount')"
+                                        :placeholder="trans('admin::app.marketing.promotions.cart-rules.create.discount-amount')"
+                                    />
 
-                                            <option
-                                                value="by_fixed"
-                                                {{ old('action_type') == 'by_fixed' ? 'selected' : '' }}
-                                            >
-                                                @lang('admin::app.marketing.promotions.cart-rules.create.fixed-amount')
-                                            </option>
+                                    <x-admin::form.control-group.error control-name="discount_amount" />
+                                </x-admin::form.control-group>
 
-                                            <option
-                                                value="cart_fixed"
-                                                {{ old('action_type') == 'cart_fixed' ? 'selected' : '' }}
-                                            >
-                                                @lang('admin::app.marketing.promotions.cart-rules.create.fixed-amount-whole-cart')
-                                            </option>
+                                <!-- Buy X Quantity (only for buy_x_get_y) -->
+                                <x-admin::form.control-group
+                                    v-if="actionType === 'buy_x_get_y'"
+                                    class="w-full"
+                                >
+                                    <x-admin::form.control-group.label class="required">
+                                        @lang('admin::app.marketing.promotions.cart-rules.create.buy-x-quantity')
+                                    </x-admin::form.control-group.label>
 
-                                            <option
-                                                value="buy_x_get_y"
-                                                {{ old('action_type') == 'buy_x_get_y' ? 'selected' : '' }}
-                                            >
-                                                @lang('admin::app.marketing.promotions.cart-rules.create.buy-x-get-y-free')
-                                            </option>
-                                        </x-admin::form.control-group.control>
+                                    <x-admin::form.control-group.control
+                                        type="text"
+                                        id="discount_step"
+                                        name="discount_step"
+                                        rules="required"
+                                        :value="old('discount_step', 0)"
+                                        :label="trans('admin::app.marketing.promotions.cart-rules.create.buy-x-quantity')"
+                                        :placeholder="trans('admin::app.marketing.promotions.cart-rules.create.buy-x-quantity')"
+                                    />
 
-                                        <x-admin::form.control-group.error control-name="action_type" />
-                                    </x-admin::form.control-group>
-                                </div>
+                                    <x-admin::form.control-group.error control-name="discount_step" />
+                                </x-admin::form.control-group>
 
-                                <div class="w-full">
-                                    <x-admin::form.control-group>
-                                        <x-admin::form.control-group.label class="required">
-                                            @lang('admin::app.marketing.promotions.cart-rules.create.discount-amount')
-                                        </x-admin::form.control-group.label>
+                                <!-- Max Discounted Quantity (shown for by_percent / by_fixed; not relevant for cart_fixed) -->
+                                <x-admin::form.control-group
+                                    v-else-if="actionType !== 'cart_fixed'"
+                                    class="w-full"
+                                >
+                                    <x-admin::form.control-group.label>
+                                        @lang('admin::app.marketing.promotions.cart-rules.create.maximum-discounted-quantity')
+                                    </x-admin::form.control-group.label>
 
-                                        <x-admin::form.control-group.control
-                                            type="text"
-                                            id="discount_amount"
-                                            name="discount_amount"
-                                            rules="required"
-                                            :value="old('discount_amount', 0)"
-                                            :label="trans('admin::app.marketing.promotions.cart-rules.create.discount-amount')"
-                                            :placeholder="trans('admin::app.marketing.promotions.cart-rules.create.discount-amount')"
-                                        />
+                                    <x-admin::form.control-group.control
+                                        type="text"
+                                        id="discount_quantity"
+                                        name="discount_quantity"
+                                        :value="old('discount_quantity', 0)"
+                                        :label="trans('admin::app.marketing.promotions.cart-rules.create.maximum-discounted-quantity')"
+                                        :placeholder="trans('admin::app.marketing.promotions.cart-rules.create.maximum-discounted-quantity')"
+                                    />
 
-                                        <x-admin::form.control-group.error control-name="discount_amount" />
-                                    </x-admin::form.control-group>
-                                </div>
+                                    <x-admin::form.control-group.error control-name="discount_quantity" />
+
+                                    <p class="mt-1 block text-xs italic leading-5 text-gray-600 dark:text-gray-300">
+                                        @lang('admin::app.marketing.promotions.cart-rules.create.maximum-discounted-quantity-info')
+                                    </p>
+                                </x-admin::form.control-group>
+                            </div>
+
+                            <!-- Maximum Eligible Quantity (separate row for buy_x_get_y, since the right slot above is taken by Buy X Quantity) -->
+                            <div
+                                class="flex gap-4 max-sm:flex-wrap"
+                                v-if="actionType === 'buy_x_get_y'"
+                            >
+                                <x-admin::form.control-group class="w-full">
+                                    <x-admin::form.control-group.label>
+                                        @lang('admin::app.marketing.promotions.cart-rules.create.maximum-eligible-quantity')
+                                    </x-admin::form.control-group.label>
+
+                                    <x-admin::form.control-group.control
+                                        type="text"
+                                        id="discount_quantity"
+                                        name="discount_quantity"
+                                        :value="old('discount_quantity', 0)"
+                                        :label="trans('admin::app.marketing.promotions.cart-rules.create.maximum-eligible-quantity')"
+                                        :placeholder="trans('admin::app.marketing.promotions.cart-rules.create.maximum-eligible-quantity')"
+                                    />
+
+                                    <x-admin::form.control-group.error control-name="discount_quantity" />
+
+                                    <p class="mt-1 block text-xs italic leading-5 text-gray-600 dark:text-gray-300">
+                                        @lang('admin::app.marketing.promotions.cart-rules.create.maximum-eligible-quantity-info')
+                                    </p>
+                                </x-admin::form.control-group>
                             </div>
 
                             <div class="flex gap-4 max-sm:flex-wrap">
-                                <div class="w-full">
-                                    <x-admin::form.control-group>
-                                        <x-admin::form.control-group.label>
-                                            @lang('admin::app.marketing.promotions.cart-rules.create.maximum-quantity-allowed-to-be-discounted')
-                                        </x-admin::form.control-group.label>
+                                <!-- Apply to Shipping -->
+                                <x-admin::form.control-group class="w-full">
+                                    <x-admin::form.control-group.label>
+                                        @lang('admin::app.marketing.promotions.cart-rules.create.apply-to-shipping')
+                                    </x-admin::form.control-group.label>
 
-                                        <x-admin::form.control-group.control
-                                            type="text"
-                                            id="discount_quantity"
-                                            name="discount_quantity"
-                                            :value="old('discount_quantity', 0)"
-                                            :label="trans('admin::app.marketing.promotions.cart-rules.create.maximum-quantity-allowed-to-be-discounted')"
-                                            :placeholder="trans('admin::app.marketing.promotions.cart-rules.create.maximum-quantity-allowed-to-be-discounted')"
-                                        />
-
-                                        <x-admin::form.control-group.error control-name="discount_quantity" />
-                                    </x-admin::form.control-group>
-                                </div>
-
-                                <div class="w-full">
-                                    <x-admin::form.control-group>
-                                        <x-admin::form.control-group.label>
-                                            @lang('admin::app.marketing.promotions.cart-rules.create.buy-x-quantity')
-                                        </x-admin::form.control-group.label>
-
-                                        <x-admin::form.control-group.control
-                                            type="text"
-                                            id="discount_step"
-                                            name="discount_step"
-                                            :value="old('discount_step', 0)"
-                                            :label="trans('admin::app.marketing.promotions.cart-rules.create.buy-x-quantity')"
-                                            :placeholder="trans('admin::app.marketing.promotions.cart-rules.create.buy-x-quantity')"
-                                        />
-
-                                        <x-admin::form.control-group.error control-name="discount_step" />
-                                    </x-admin::form.control-group>
-                                </div>
-                            </div>
-
-                            <div class="flex gap-4 max-sm:flex-wrap">
-                                <div class="w-full">
-                                    <x-admin::form.control-group>
-                                        <x-admin::form.control-group.label>
-                                            @lang('admin::app.marketing.promotions.cart-rules.create.apply-to-shipping')
-                                        </x-admin::form.control-group.label>
-
-                                        <x-admin::form.control-group.control
-                                            type="select"
-                                            id="apply_to_shipping"
-                                            name="apply_to_shipping"
-                                            :value="old('apply_to_shipping', 0)"
-                                            :label="trans('admin::app.marketing.promotions.cart-rules.create.apply-to-shipping')"
-                                            :placeholder="trans('admin::app.marketing.promotions.cart-rules.create.apply-to-shipping')"
+                                    <x-admin::form.control-group.control
+                                        type="select"
+                                        id="apply_to_shipping"
+                                        name="apply_to_shipping"
+                                        :value="old('apply_to_shipping', 0)"
+                                        :label="trans('admin::app.marketing.promotions.cart-rules.create.apply-to-shipping')"
+                                        :placeholder="trans('admin::app.marketing.promotions.cart-rules.create.apply-to-shipping')"
+                                        ::disabled="actionType == 'cart_fixed' || actionType == 'buy_x_get_y'"
+                                    >
+                                        <option
+                                            value="0"
+                                            {{ ! old('apply_to_shipping') ? 'selected' : '' }}
                                         >
-                                            <option
-                                                value="0"
-                                                {{ ! old('apply_to_shipping') ? 'selected' : '' }}
-                                            >
-                                                @lang('admin::app.marketing.promotions.cart-rules.create.no')
-                                            </option>
+                                            @lang('admin::app.marketing.promotions.cart-rules.create.no')
+                                        </option>
 
-                                            <option
-                                                value="1"
-                                                {{ old('apply_to_shipping') ? 'selected' : '' }}
-                                            >
-                                                @lang('admin::app.marketing.promotions.cart-rules.create.yes')
-                                            </option>
-                                        </x-admin::form.control-group.control>
-
-                                        <x-admin::form.control-group.error control-name="apply_to_shipping" />
-                                    </x-admin::form.control-group>
-                                </div>
-
-                                <div class="w-full">
-                                    <x-admin::form.control-group>
-                                        <x-admin::form.control-group.label>
-                                            @lang('admin::app.marketing.promotions.cart-rules.create.free-shipping')
-                                        </x-admin::form.control-group.label>
-
-                                        <x-admin::form.control-group.control
-                                            type="select"
-                                            id="free_shipping"
-                                            name="free_shipping"
-                                            :value="old('free_shipping', 0)"
-                                            :label="trans('admin::app.marketing.promotions.cart-rules.create.free-shipping')"
-                                            :placeholder="trans('admin::app.marketing.promotions.cart-rules.create.free-shipping')"
+                                        <option
+                                            value="1"
+                                            {{ old('apply_to_shipping') ? 'selected' : '' }}
                                         >
-                                            <option
-                                                value="0"
-                                                {{ ! old('free_shipping') ? 'selected' : '' }}
-                                            >
-                                                @lang('admin::app.marketing.promotions.cart-rules.create.no')
-                                            </option>
+                                            @lang('admin::app.marketing.promotions.cart-rules.create.yes')
+                                        </option>
+                                    </x-admin::form.control-group.control>
 
-                                            <option
-                                                value="1"
-                                                {{ old('free_shipping') ? 'selected' : '' }}
-                                            >
-                                                @lang('admin::app.marketing.promotions.cart-rules.create.yes')
-                                            </option>
-                                        </x-admin::form.control-group.control>
+                                    <x-admin::form.control-group.error control-name="apply_to_shipping" />
 
-                                        <x-admin::form.control-group.error control-name="free_shipping" />
-                                    </x-admin::form.control-group>
-                                </div>
+                                    <p
+                                        v-if="actionType === 'cart_fixed' || actionType === 'buy_x_get_y'"
+                                        class="mt-1 block text-xs italic leading-5 text-gray-600 dark:text-gray-300"
+                                    >
+                                        @lang('admin::app.marketing.promotions.cart-rules.create.apply-to-shipping-disabled-info')
+                                    </p>
+                                </x-admin::form.control-group>
+
+                                <!-- Free Shipping -->
+                                <x-admin::form.control-group class="w-full">
+                                    <x-admin::form.control-group.label>
+                                        @lang('admin::app.marketing.promotions.cart-rules.create.free-shipping')
+                                    </x-admin::form.control-group.label>
+
+                                    <x-admin::form.control-group.control
+                                        type="select"
+                                        id="free_shipping"
+                                        name="free_shipping"
+                                        :value="old('free_shipping', 0)"
+                                        :label="trans('admin::app.marketing.promotions.cart-rules.create.free-shipping')"
+                                        :placeholder="trans('admin::app.marketing.promotions.cart-rules.create.free-shipping')"
+                                    >
+                                        <option
+                                            value="0"
+                                            {{ ! old('free_shipping') ? 'selected' : '' }}
+                                        >
+                                            @lang('admin::app.marketing.promotions.cart-rules.create.no')
+                                        </option>
+
+                                        <option
+                                            value="1"
+                                            {{ old('free_shipping') ? 'selected' : '' }}
+                                        >
+                                            @lang('admin::app.marketing.promotions.cart-rules.create.yes')
+                                        </option>
+                                    </x-admin::form.control-group.control>
+
+                                    <x-admin::form.control-group.error control-name="free_shipping" />
+                                </x-admin::form.control-group>
                             </div>
 
                             <div class="flex justify-between gap-4 max-sm:flex-wrap">
-                                <div class="w-full">
-                                    <x-admin::form.control-group class="!mb-0">
-                                        <x-admin::form.control-group.label>
-                                            @lang('admin::app.marketing.promotions.cart-rules.create.end-of-other-rules')
-                                        </x-admin::form.control-group.label>
+                                <!-- End Other Rules -->
+                                <x-admin::form.control-group class="mb-0! w-full">
+                                    <x-admin::form.control-group.label>
+                                        @lang('admin::app.marketing.promotions.cart-rules.create.end-of-other-rules')
+                                    </x-admin::form.control-group.label>
 
-                                        <x-admin::form.control-group.control
-                                            type="select"
-                                            class="!w-1/2 max-sm:!w-full"
-                                            id="end_other_rules"
-                                            name="end_other_rules"
-                                            :value="old('end_other_rules', 0)"
-                                            :label="trans('admin::app.marketing.promotions.cart-rules.create.end-of-other-rules')"
-                                            :placeholder="trans('admin::app.marketing.promotions.cart-rules.create.end-of-other-rules')"
+                                    <x-admin::form.control-group.control
+                                        type="select"
+                                        class="w-1/2! max-sm:w-full!"
+                                        id="end_other_rules"
+                                        name="end_other_rules"
+                                        :value="old('end_other_rules', 0)"
+                                        :label="trans('admin::app.marketing.promotions.cart-rules.create.end-of-other-rules')"
+                                        :placeholder="trans('admin::app.marketing.promotions.cart-rules.create.end-of-other-rules')"
+                                    >
+                                        <option
+                                            value="0"
+                                            {{ ! old('end_other_rules') ? 'selected' : '' }}
                                         >
-                                            <option
-                                                value="0"
-                                                {{ ! old('end_other_rules') ? 'selected' : '' }}
-                                            >
-                                                @lang('admin::app.marketing.promotions.cart-rules.create.no')
-                                            </option>
+                                            @lang('admin::app.marketing.promotions.cart-rules.create.no')
+                                        </option>
 
-                                            <option
-                                                value="1"
-                                                {{ old('end_other_rules') ? 'selected' : '' }}
-                                            >
-                                                @lang('admin::app.marketing.promotions.cart-rules.create.yes')
-                                            </option>
-                                        </x-admin::form.control-group.control>
+                                        <option
+                                            value="1"
+                                            {{ old('end_other_rules') ? 'selected' : '' }}
+                                        >
+                                            @lang('admin::app.marketing.promotions.cart-rules.create.yes')
+                                        </option>
+                                    </x-admin::form.control-group.control>
 
-                                        <x-admin::form.control-group.error control-name="end_other_rules" />
-                                    </x-admin::form.control-group>
-                                </div>
+                                    <x-admin::form.control-group.error control-name="end_other_rules" />
+                                </x-admin::form.control-group>
                             </div>
                         </div>
                     </div>
@@ -500,7 +562,7 @@
                 </div>
 
                 <!-- Right sub-component -->
-                <div class="flex w-[360px] max-w-full flex-col gap-2 max-sm:w-full">
+                <div class="flex w-90 max-w-full flex-col gap-2 max-sm:w-full">
 
                     {!! view_render_event('bagisto.admin.marketing.promotions.cart_rules.create.card.accordion.settings.before') !!}
 
@@ -513,6 +575,7 @@
                         </x-slot>
 
                         <x-slot:content>
+                            <!-- Sort Order -->
                             <x-admin::form.control-group>
                                 <x-admin::form.control-group.label>
                                     @lang('admin::app.marketing.promotions.cart-rules.create.priority')
@@ -537,7 +600,7 @@
                                 </x-admin::form.control-group.label>
 
                                 @foreach(core()->getAllChannels() as $channel)
-                                    <x-admin::form.control-group class="!mb-2 flex items-center gap-2.5">
+                                    <x-admin::form.control-group class="mb-2! flex items-center gap-2.5">
                                         <x-admin::form.control-group.control
                                             type="checkbox"
                                             :id="'channel_' . '_' . $channel->id"
@@ -552,6 +615,7 @@
                                         <label
                                             class="cursor-pointer text-xs font-medium text-gray-600 dark:text-gray-300"
                                             for="{{ 'channel_' . '_' . $channel->id }}"
+                                            v-pre
                                         >
                                             {{ core()->getChannelName($channel) }}
                                         </label>
@@ -561,14 +625,14 @@
                                 <x-admin::form.control-group.error control-name="channels[]" />
                             </div>
 
-                            <!-- Customer Grous -->
+                            <!-- Customer Groups -->
                             <div class="mb-2.5">
                                 <x-admin::form.control-group.label class="required">
                                     @lang('admin::app.marketing.promotions.cart-rules.create.customer-groups')
                                 </x-admin::form.control-group.label>
 
-                                @foreach(app('Webkul\Customer\Repositories\CustomerGroupRepository')->all() as $customerGroup)
-                                    <x-admin::form.control-group class="!mb-2 flex items-center gap-2.5">
+                                @foreach(app(\Webkul\Customer\Repositories\CustomerGroupRepository::class)->all() as $customerGroup)
+                                    <x-admin::form.control-group class="mb-2! flex items-center gap-2.5">
                                         <x-admin::form.control-group.control
                                             type="checkbox"
                                             :id="'customer_group_' . '_' . $customerGroup->id"
@@ -583,6 +647,7 @@
                                         <label
                                             class="cursor-pointer text-xs font-medium text-gray-600 dark:text-gray-300"
                                             for="{{ 'customer_group_' . '_' . $customerGroup->id }}"
+                                            v-pre
                                         >
                                             {{ $customerGroup->name }}
                                         </label>
@@ -593,7 +658,7 @@
                             </div>
 
                             <!-- Status -->
-                            <x-admin::form.control-group class="!mb-0">
+                            <x-admin::form.control-group class="mb-0!">
                                 <x-admin::form.control-group.label>
                                     @lang('admin::app.marketing.promotions.cart-rules.create.status')
                                 </x-admin::form.control-group.label>
@@ -624,6 +689,7 @@
                         </x-slot>
 
                         <x-slot:content>
+                            <!-- Starts form -->
                             <x-admin::form.control-group>
                                 <x-admin::form.control-group.label>
                                     @lang('admin::app.marketing.promotions.cart-rules.create.from')
@@ -641,7 +707,8 @@
                                 <x-admin::form.control-group.error control-name="starts_from" />
                             </x-admin::form.control-group>
 
-                            <x-admin::form.control-group class="!mb-0">
+                            <!-- Ends Till -->
+                            <x-admin::form.control-group class="mb-0!">
                                 <x-admin::form.control-group.label>
                                     @lang('admin::app.marketing.promotions.cart-rules.create.to')
                                 </x-admin::form.control-group.label>
@@ -732,7 +799,7 @@
 
                     <select
                         :name="['conditions[' + index + '][operator]']"
-                        class="custom-select inline-flex h-10 w-full max-w-[196px] items-center justify-between gap-x-1 rounded-md border bg-white px-3 py-2.5 text-sm font-normal text-gray-600 transition-all hover:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-400 max-sm:max-w-full max-sm:flex-auto"
+                        class="custom-select inline-flex h-10 w-full max-w-49 items-center justify-between gap-x-1 rounded-md border bg-white px-3 py-2.5 text-sm font-normal text-gray-600 transition-all hover:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-400 max-sm:max-w-full max-sm:flex-auto"
                         v-model="condition.operator"
                         v-if="matchedAttribute"
                     >
@@ -791,7 +858,7 @@
                                         type="text"
                                         v-bind="field"
                                         :class="{ 'border border-red-500': errorMessage }"
-                                        class="min:w-1/3 flex h-10 w-[289px] rounded-md border px-3 py-2.5 text-sm text-gray-600 transition-all hover:border-gray-400 focus:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-400 dark:focus:border-gray-400"
+                                        class="min:w-1/3 flex h-10 w-72.25 rounded-md border px-3 py-2.5 text-sm text-gray-600 transition-all hover:border-gray-400 focus:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-400 dark:focus:border-gray-400"
                                     />
                                 </v-field>
 
@@ -804,22 +871,28 @@
                             </div>
 
                             <div v-if="matchedAttribute.type == 'date'">
-                                <x-admin::flat-picker.date class="!w-[140px]" ::allow-input="false">
+                                <x-admin::flat-picker.date
+                                    class="w-35!"
+                                    ::allow-input="false"
+                                >
                                     <input
                                         type="date"
                                         :name="['conditions[' + index + '][value]']"
-                                        class="flex min-h-[39px] w-full rounded-md border px-3 py-2 text-sm text-gray-600 transition-all hover:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-400"
+                                        class="flex min-h-9.75 w-full rounded-md border px-3 py-2 text-sm text-gray-600 transition-all hover:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-400"
                                         v-model="condition.value"
                                     />
                                 </x-admin::flat-picker.date>
                             </div>
 
                             <div v-if="matchedAttribute.type == 'datetime'">
-                                <x-admin::flat-picker.date class="!w-[140px]" ::allow-input="false">
+                                <x-admin::flat-picker.date
+                                    class="w-35!"
+                                    ::allow-input="false"
+                                >
                                     <input
                                         type="datetime"
                                         :name="['conditions[' + index + '][value]']"
-                                        class="flex min-h-[39px] w-full rounded-md border px-3 py-2 text-sm text-gray-600 transition-all hover:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-400"
+                                        class="flex min-h-9.75 w-full rounded-md border px-3 py-2 text-sm text-gray-600 transition-all hover:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-400"
                                         v-model="condition.value"
                                     />
                                 </x-admin::flat-picker.date>
@@ -828,7 +901,7 @@
                             <div v-if="matchedAttribute.type == 'boolean'">
                                 <select
                                     :name="['conditions[' + index + '][value]']"
-                                    class="custom-select inline-flex h-10 w-[196px] max-w-[196px] items-center justify-between gap-x-1 rounded-md border bg-white px-3 py-2.5 text-sm font-normal text-gray-600 transition-all hover:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-400"
+                                    class="custom-select inline-flex h-10 w-49 max-w-49 items-center justify-between gap-x-1 rounded-md border bg-white px-3 py-2.5 text-sm font-normal text-gray-600 transition-all hover:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-400"
                                     v-model="condition.value"
                                 >
                                     <option value="1">
@@ -844,7 +917,7 @@
                             <div v-if="matchedAttribute.type == 'select' || matchedAttribute.type == 'radio'">
                                 <select
                                     :name="['conditions[' + index + '][value]']"
-                                    class="custom-select inline-flex h-10 w-full min-w-[196px] items-center justify-between gap-x-1 rounded-md border bg-white px-3 py-2.5 text-sm font-normal text-gray-600 transition-all hover:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-400"
+                                    class="custom-select inline-flex h-10 w-full min-w-49 items-center justify-between gap-x-1 rounded-md border bg-white px-3 py-2.5 text-sm font-normal text-gray-600 transition-all hover:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-400"
                                     v-if="matchedAttribute.key != 'catalog|state'"
                                     v-model="condition.value"
                                 >
@@ -858,7 +931,7 @@
 
                                 <select
                                     :name="['conditions[' + index + '][value]']"
-                                    class="custom-select inline-flex h-10 w-full max-w-[196px] items-center justify-between gap-x-1 rounded-md border bg-white px-3 py-2.5 text-sm font-normal text-gray-600 transition-all hover:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-400 max-sm:max-w-full max-sm:flex-auto"
+                                    class="custom-select inline-flex h-10 w-full max-w-49 items-center justify-between gap-x-1 rounded-md border bg-white px-3 py-2.5 text-sm font-normal text-gray-600 transition-all hover:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-400 max-sm:max-w-full max-sm:flex-auto"
                                     v-model="condition.value"
                                     v-else
                                 >
@@ -879,7 +952,7 @@
                             <div v-if="matchedAttribute.type == 'multiselect' || matchedAttribute.type == 'checkbox'">
                                 <select
                                     :name="['conditions[' + index + '][value][]']"
-                                    class="inline-flex h-10 w-[196px] max-w-[196px] items-center justify-between gap-x-1 rounded-md border px-3 py-2 text-sm text-gray-600 transition-all hover:border-gray-400 focus:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-400 dark:focus:border-gray-400"
+                                    class="inline-flex h-10 w-49 max-w-49 items-center justify-between gap-x-1 rounded-md border px-3 py-2 text-sm text-gray-600 transition-all hover:border-gray-400 focus:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-400 dark:focus:border-gray-400"
                                     v-model="condition.value"
                                     multiple
                                 >
@@ -896,7 +969,7 @@
                 </div>
 
                 <span
-                    class="icon-delete max-h-9 max-w-9 cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-100 dark:hover:bg-gray-950 max-sm:place-self-center"
+                    class="icon-delete max-w-9 max-h-9 cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-100 dark:hover:bg-gray-950 max-sm:place-self-center"
                     @click="removeCondition"
                 >
                 </span>

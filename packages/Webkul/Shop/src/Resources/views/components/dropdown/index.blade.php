@@ -51,7 +51,7 @@
                 leave-to-class="scale-95 transform opacity-0"
             >
                 <div
-                    class="absolute z-20 w-max overflow-hidden rounded-[20px] bg-white shadow-[0px_10px_84px_rgba(0,0,0,0.1)] max-md:rounded-lg"
+                    class="absolute z-20 w-max rounded-[20px] bg-white shadow-[0px_10px_84px_rgba(0,0,0,0.1)] max-md:rounded-lg"
                     :style="positionStyles"
                     v-show="isActive"
                 >
@@ -89,6 +89,7 @@
 
             created() {
                 window.addEventListener('click', this.handleFocusOut);
+                window.addEventListener('keydown', this.handleKeyDown);
             },
 
             mounted() {
@@ -99,6 +100,7 @@
 
             beforeDestroy() {
                 window.removeEventListener('click', this.handleFocusOut);
+                window.removeEventListener('keydown', this.handleKeyDown);
             },
 
             computed: {
@@ -164,6 +166,14 @@
                 handleFocusOut(e) {
                     if (! this.$el.contains(e.target) || (this.closeOnClick && this.$el.children[1].contains(e.target))) {
                         this.isActive = false;
+                    }
+                },
+
+                handleKeyDown(e) {
+                    if (e.key === 'Escape' && this.isActive) {
+                        this.isActive = false;
+                        
+                        this.$refs.toggleBlock.querySelector('button, a, [tabindex="0"]')?.focus();
                     }
                 },
             },

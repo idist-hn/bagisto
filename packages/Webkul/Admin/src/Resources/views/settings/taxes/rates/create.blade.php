@@ -46,11 +46,11 @@
 
             {!! view_render_event('bagisto.admin.settings.taxes.rates.create.create_form_controls.before') !!}
 
-            <!-- Tax Rates Informations -->
+            <!-- Tax Rates information's -->
             <div class="mt-3.5 flex gap-2.5 max-xl:flex-wrap">
                 <!-- Left Component -->
                 <div class="flex flex-1 flex-col gap-2 max-xl:flex-auto">
-                    <div class="box-shadow rounded bg-white p-4 dark:bg-gray-900">
+                    <div class="box-shadow rounded-sm bg-white p-4 dark:bg-gray-900">
                         <p class="mb-4 text-base font-semibold text-gray-800 dark:text-white">
                             @lang('admin::app.settings.taxes.rates.create.general')
                         </p>
@@ -153,7 +153,7 @@
                         </x-admin::form.control-group>
 
                         <!-- Tax Rate -->
-                        <x-admin::form.control-group class="!mb-0">
+                        <x-admin::form.control-group class="mb-0!">
                             <x-admin::form.control-group.label class="required">
                                 @lang('admin::app.settings.taxes.rates.create.tax-rate')
                             </x-admin::form.control-group.label>
@@ -161,7 +161,7 @@
                             <x-admin::form.control-group.control
                                 type="text"
                                 name="tax_rate"
-                                rules="required"
+                                {{-- rules="required|decimal|min:0|max:100" --}}
                                 :value="old('tax_rate')"
                                 :label="trans('admin::app.settings.taxes.rates.create.tax-rate')"
                                 :placeholder="trans('admin::app.settings.taxes.rates.create.tax-rate')"
@@ -173,7 +173,7 @@
                 </div>
 
                 <!-- Right Component -->
-                <div class="flex w-[360px] max-w-full flex-col gap-2 max-md:w-full">
+                <div class="flex w-90 max-w-full flex-col gap-2 max-md:w-full">
                     <x-admin::accordion>
                         <x-slot:header>
                             <p class="p-2.5 text-base font-semibold text-gray-800 dark:text-white">
@@ -201,7 +201,7 @@
                             </x-admin::form.control-group>
 
                             <!-- Zip Code -->
-                            <x-admin::form.control-group v-if="! is_zip" class="!mb-0">
+                            <x-admin::form.control-group v-if="! is_zip" class="mb-0!">
                                 <x-admin::form.control-group.label>
                                     @lang('admin::app.settings.taxes.rates.create.zip-code')
                                 </x-admin::form.control-group.label>
@@ -237,7 +237,7 @@
                                 </x-admin::form.control-group>
 
                                 <!-- Zip To -->
-                                <x-admin::form.control-group class="!mb-0">
+                                <x-admin::form.control-group class="mb-0!">
                                     <x-admin::form.control-group.label class="required">
                                         @lang('admin::app.settings.taxes.rates.create.zip-to')
                                     </x-admin::form.control-group.label>

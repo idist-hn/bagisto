@@ -1,5 +1,5 @@
-@inject ('reviewHelper', 'Webkul\Product\Helpers\Review')
-@inject ('productViewHelper', 'Webkul\Product\Helpers\View')
+@inject ('reviewHelper', \Webkul\Product\Helpers\Review::class)
+@inject ('productViewHelper', \Webkul\Product\Helpers\View::class)
 
 @php
     $avgRatings = $reviewHelper->getAverageRating($product);
@@ -19,7 +19,7 @@
 
     @if (core()->getConfigData('catalog.rich_snippets.products.enable'))
         <script type="application/ld+json">
-            {!! app('Webkul\Product\Helpers\SEO')->getProductJsonLd($product) !!}
+            {!! app(\Webkul\Product\Helpers\SEO::class)->getProductJsonLd($product) !!}
         </script>
     @endif
 
@@ -57,7 +57,7 @@
 
     <!-- Breadcrumbs -->
     @if ((core()->getConfigData('general.general.breadcrumbs.shop')))
-        <div class="flex justify-center max-lg:hidden">
+        <div class="flex justify-center px-7 max-lg:hidden">
             <x-shop::breadcrumbs
                 name="product"
                 :entity="$product"
@@ -82,11 +82,11 @@
 
                 <x-shop::tabs.item
                     id="descritpion-tab"
-                    class="container mt-[60px] !p-0"
+                    class="container mt-15 p-0!"
                     :title="trans('shop::app.products.view.description')"
                     :is-selected="true"
                 >
-                    <div class="container mt-[60px] max-1180:px-5">
+                    <div class="container mt-15 max-1180:px-5">
                         <p class="text-lg text-zinc-500 max-1180:text-sm">
                             {!! $product->description !!}
                         </p>
@@ -99,41 +99,41 @@
                 @if(count($attributeData))
                     <x-shop::tabs.item
                         id="information-tab"
-                        class="container mt-[60px] !p-0"
+                        class="container mt-15 p-0!"
                         :title="trans('shop::app.products.view.additional-information')"
                         :is-selected="false"
                     >
-                        <div class="container mt-[60px] max-1180:px-5">
+                        <div class="container mt-15 max-1180:px-5">
                             <div class="mt-8 grid max-w-max grid-cols-[auto_1fr] gap-4">
                                 @foreach ($customAttributeValues as $customAttributeValue)
                                     @if (! empty($customAttributeValue['value']))
                                         <div class="grid">
                                             <p class="text-base text-black">
-                                                {!! $customAttributeValue['label'] !!}
+                                                {{ $customAttributeValue['label'] }}
                                             </p>
                                         </div>
 
                                         @if ($customAttributeValue['type'] == 'file')
-                                            <a 
-                                                href="{{ Storage::url($product[$customAttributeValue['code']]) }}" 
+                                            <a
+                                                href="{{ Storage::url($product[$customAttributeValue['code']]) }}"
                                                 download="{{ $customAttributeValue['label'] }}"
                                             >
                                                 <span class="icon-download text-2xl"></span>
                                             </a>
                                         @elseif ($customAttributeValue['type'] == 'image')
-                                            <a 
-                                                href="{{ Storage::url($product[$customAttributeValue['code']]) }}" 
+                                            <a
+                                                href="{{ Storage::url($product[$customAttributeValue['code']]) }}"
                                                 download="{{ $customAttributeValue['label'] }}"
                                             >
-                                                <img 
-                                                    class="h-5 min-h-5 w-5 min-w-5" 
-                                                    src="{{ Storage::url($customAttributeValue['value']) }}" 
+                                                <img
+                                                    class="min-h-5 min-w-5 h-5 w-5"
+                                                    src="{{ Storage::url($customAttributeValue['value']) }}"
                                                 />
                                             </a>
                                         @else
                                             <div class="grid">
                                                 <p class="text-base text-zinc-500">
-                                                    {!! $customAttributeValue['value'] !!}
+                                                    {{ $customAttributeValue['value'] }}
                                                 </p>
                                             </div>
                                         @endif
@@ -147,7 +147,7 @@
                 <!-- Reviews Tab -->
                 <x-shop::tabs.item
                     id="review-tab"
-                    class="container mt-[60px] !p-0"
+                    class="container mt-15 p-0!"
                     :title="trans('shop::app.products.view.review')"
                     :is-selected="false"
                 >
@@ -158,13 +158,13 @@
     </div>
 
     <!-- Information Section -->
-    <div class="container mt-6 grid gap-3 !p-0 max-1180:px-5 1180:hidden">
+    <div class="container mt-6 grid gap-3 p-0! max-1180:px-5 1180:hidden">
         <!-- Description Accordion -->
         <x-shop::accordion
             class="max-md:border-none"
             :is-active="true"
         >
-            <x-slot:header class="bg-gray-100 max-md:!py-3 max-sm:!py-2">
+            <x-slot:header class="bg-gray-100 max-md:py-3! max-sm:py-2!">
                 <p class="text-base font-medium 1180:hidden">
                     @lang('shop::app.products.view.description')
                 </p>
@@ -183,7 +183,7 @@
                 class="max-md:border-none"
                 :is-active="false"
             >
-                <x-slot:header class="bg-gray-100 max-md:!py-3 max-sm:!py-2">
+                <x-slot:header class="bg-gray-100 max-md:py-3! max-sm:py-2!">
                     <p class="text-base font-medium 1180:hidden">
                         @lang('shop::app.products.view.additional-information')
                     </p>
@@ -195,7 +195,10 @@
                             @foreach ($customAttributeValues as $customAttributeValue)
                                 @if (! empty($customAttributeValue['value']))
                                     <div class="grid">
-                                        <p class="text-base text-black">
+                                        <p
+                                            class="text-base text-black"
+                                            v-pre
+                                        >
                                             {{ $customAttributeValue['label'] }}
                                         </p>
                                     </div>
@@ -212,15 +215,18 @@
                                             href="{{ Storage::url($product[$customAttributeValue['code']]) }}"
                                             download="{{ $customAttributeValue['label'] }}"
                                         >
-                                            <img 
-                                                class="h-5 min-h-5 w-5 min-w-5" 
+                                            <img
+                                                class="min-h-5 min-w-5 h-5 w-5"
                                                 src="{{ Storage::url($customAttributeValue['value']) }}"
                                                 alt="Product Image"
                                             />
                                         </a>
                                     @else
                                         <div class="grid">
-                                            <p class="text-base text-zinc-500">
+                                            <p
+                                                class="text-base text-zinc-500"
+                                                v-pre
+                                            >
                                                 {{ $customAttributeValue['value'] ?? '-' }}
                                             </p>
                                         </div>
@@ -239,7 +245,7 @@
             :is-active="false"
         >
             <x-slot:header
-                class="bg-gray-100 max-md:!py-3 max-sm:!py-2"
+                class="bg-gray-100 max-md:py-3! max-sm:py-2!"
                 id="review-accordian-button"
             >
                 <p class="text-base font-medium">
@@ -253,17 +259,7 @@
         </x-shop::accordion>
     </div>
 
-    <!-- Featured Products -->
-    <x-shop::products.carousel
-        :title="trans('shop::app.products.view.related-product-title')"
-        :src="route('shop.api.products.related.index', ['id' => $product->id])"
-    />
-
-    <!-- Upsell Products -->
-    <x-shop::products.carousel
-        :title="trans('shop::app.products.view.up-sell-title')"
-        :src="route('shop.api.products.up-sell.index', ['id' => $product->id])"
-    />
+    <v-product-associations></v-product-associations>
 
     {!! view_render_event('bagisto.shop.products.view.after', ['product' => $product]) !!}
 
@@ -292,23 +288,23 @@
                         v-model="is_buy_now"
                     >
 
-                    <div class="container px-[60px] max-1180:px-0">
+                    <div class="container px-15 max-1180:px-0">
                         <div class="mt-12 flex gap-9 max-1180:flex-wrap max-lg:mt-0 max-sm:gap-y-4">
                             <!-- Gallery Blade Inclusion -->
                             @include('shop::products.view.gallery')
 
                             <!-- Details -->
-                            <div class="relative max-w-[590px] max-1180:w-full max-1180:max-w-full max-1180:px-5 max-sm:px-4">
+                            <div class="relative max-w-147.5 max-1180:w-full max-1180:max-w-full max-1180:px-5 max-sm:px-4">
                                 {!! view_render_event('bagisto.shop.products.name.before', ['product' => $product]) !!}
 
                                 <div class="flex justify-between gap-4">
-                                    <h1 class="text-3xl font-medium max-sm:text-xl">
+                                    <h1 class="wrap-break-word text-3xl font-medium max-sm:text-xl" v-pre>
                                         {{ $product->name }}
                                     </h1>
 
                                     @if (core()->getConfigData('customer.settings.wishlist.wishlist_option'))
                                         <div
-                                            class="flex max-h-[46px] min-h-[46px] min-w-[46px] cursor-pointer items-center justify-center rounded-full border bg-white text-2xl transition-all hover:opacity-[0.8] max-sm:max-h-7 max-sm:min-h-7 max-sm:min-w-7 max-sm:text-base"
+                                            class="max-sm:min-h-7 max-sm:min-w-7 flex max-h-11.5 min-h-11.5 min-w-11.5 cursor-pointer items-center justify-center rounded-full border bg-white text-2xl transition-all hover:opacity-[0.8] max-sm:max-h-7 max-sm:text-base"
                                             role="button"
                                             aria-label="@lang('shop::app.products.view.add-to-wishlist')"
                                             tabindex="0"
@@ -346,7 +342,7 @@
                                 <!-- Pricing -->
                                 {!! view_render_event('bagisto.shop.products.price.before', ['product' => $product]) !!}
 
-                                <p class="mt-[22px] flex items-center gap-2.5 text-2xl !font-medium max-sm:mt-2 max-sm:gap-x-2.5 max-sm:gap-y-0 max-sm:text-lg">
+                                <p class="mt-5.5 flex items-center gap-2.5 text-2xl font-medium! max-sm:mt-2 max-sm:gap-x-2.5 max-sm:gap-y-0 max-sm:text-lg">
                                     {!! $product->getTypeInstance()->getPriceHtml() !!}
                                 </p>
 
@@ -368,6 +364,8 @@
 
                                 {!! view_render_event('bagisto.shop.products.price.after', ['product' => $product]) !!}
 
+                                {!! app(\Webkul\Omnibus\Services\OmnibusPriceManager::class)->getOmnibusPriceHtml($product) !!}
+
                                 {!! view_render_event('bagisto.shop.products.short_description.before', ['product' => $product]) !!}
 
                                 <p class="mt-6 text-lg text-zinc-500 max-sm:mt-1.5 max-sm:text-sm">
@@ -375,6 +373,8 @@
                                 </p>
 
                                 {!! view_render_event('bagisto.shop.products.short_description.after', ['product' => $product]) !!}
+
+                                @include('shop::products.view.types.simple')
 
                                 @include('shop::products.view.types.configurable')
 
@@ -384,9 +384,10 @@
 
                                 @include('shop::products.view.types.downloadable')
 
+                                @include('shop::products.view.types.booking')
 
-                                <!-- Product Actions and Qunatity Box -->
-                                <div class="mt-8 flex max-w-[470px] gap-4 max-sm:mt-4">
+                                <!-- Product Actions and Quantity Box -->
+                                <div class="mt-8 flex max-w-117.5 gap-4 max-sm:mt-4 max-sm:flex-wrap">
 
                                     {!! view_render_event('bagisto.shop.products.view.quantity.before', ['product' => $product]) !!}
 
@@ -406,15 +407,25 @@
 
                                         <x-shop::button
                                             type="submit"
-                                            class="secondary-button w-full max-w-full max-md:py-3 max-sm:rounded-lg max-sm:py-1.5"
+                                            class="secondary-button w-full max-w-full max-sm:max-w-none! max-sm:w-auto! max-md:py-3 max-sm:rounded-lg max-sm:py-1.5"
                                             button-type="secondary-button"
                                             :loading="false"
                                             :title="trans('shop::app.products.view.add-to-cart')"
                                             :disabled="! $product->isSaleable(1)"
                                             ::loading="isStoring.addToCart"
+                                            ::disabled="isStoring.addToCart"
+                                            @click="is_buy_now=0;"
                                         />
 
                                         {!! view_render_event('bagisto.shop.products.view.add_to_cart.after', ['product' => $product]) !!}
+                                    @else
+                                        <button
+                                            type="button"
+                                            class="secondary-button w-full max-w-full max-sm:max-w-none! max-sm:w-auto! max-md:py-3 max-sm:rounded-lg max-sm:py-1.5"
+                                            @click="$refs.contactUsModal.open()"
+                                        >
+                                            @lang('shop::app.components.layouts.footer.contact-us')
+                                        </button>
                                     @endif
                                 </div>
 
@@ -422,15 +433,16 @@
                                 @if (core()->getConfigData('sales.checkout.shopping_cart.cart_page'))
                                     {!! view_render_event('bagisto.shop.products.view.buy_now.before', ['product' => $product]) !!}
 
-                                    @if (core()->getConfigData('catalog.products.storefront.buy_now_button_display'))
+                                    @if (core()->getConfigData('catalog.products.product_view_page.buy_now_button_display'))
                                         <x-shop::button
                                             type="submit"
-                                            class="primary-button mt-5 w-full max-w-[470px] max-md:py-3 max-sm:mt-3 max-sm:rounded-lg max-sm:py-1.5"
+                                            class="primary-button mt-5 w-full max-w-117.5 max-md:py-3 max-sm:mt-3 max-sm:rounded-lg max-sm:py-1.5"
                                             button-type="primary-button"
                                             :title="trans('shop::app.products.view.buy-now')"
                                             :disabled="! $product->isSaleable(1)"
                                             ::loading="isStoring.buyNow"
                                             @click="is_buy_now=1;"
+                                            ::disabled="isStoring.buyNow"
                                         />
                                     @endif
 
@@ -468,6 +480,111 @@
                     </div>
                 </form>
             </x-shop::form>
+
+            <!-- Contact Us Modal -->
+            <x-shop::modal ref="contactUsModal">
+                <x-slot:header>
+                <h2 class="text-lg font-semibold max-md:text-base">
+                        @lang('shop::app.products.view.contact-us.title')
+                    </h2>
+                </x-slot>
+
+                <x-slot:content>
+                    <x-shop::form :action="route('shop.home.contact_us.send_mail')">
+                        <x-shop::form.control-group>
+                            <x-shop::form.control-group.label class="required">
+                                @lang('shop::app.products.view.contact-us.name')
+                            </x-shop::form.control-group.label>
+
+                            <x-shop::form.control-group.control
+                                type="text"
+                                name="name"
+                                rules="required"
+                                :value="old('name')"
+                                :label="trans('shop::app.products.view.contact-us.name')"
+                                :placeholder="trans('shop::app.products.view.contact-us.name')"
+                                :aria-label="trans('shop::app.products.view.contact-us.name')"
+                                aria-required="true"
+                            />
+
+                            <x-shop::form.control-group.error control-name="name" />
+                        </x-shop::form.control-group>
+
+                        <x-shop::form.control-group>
+                            <x-shop::form.control-group.label class="required">
+                                @lang('shop::app.products.view.contact-us.email')
+                            </x-shop::form.control-group.label>
+
+                            <x-shop::form.control-group.control
+                                type="email"
+                                name="email"
+                                rules="required|email"
+                                :value="old('email')"
+                                :label="trans('shop::app.products.view.contact-us.email')"
+                                :placeholder="trans('shop::app.products.view.contact-us.email')"
+                                :aria-label="trans('shop::app.products.view.contact-us.email')"
+                                aria-required="true"
+                            />
+
+                            <x-shop::form.control-group.error control-name="email" />
+                        </x-shop::form.control-group>
+
+                        <x-shop::form.control-group>
+                            <x-shop::form.control-group.label>
+                                @lang('shop::app.products.view.contact-us.phone-number')
+                            </x-shop::form.control-group.label>
+
+                            <x-shop::form.control-group.control
+                                type="text"
+                                name="contact"
+                                rules="phone"
+                                :value="old('contact')"
+                                :label="trans('shop::app.products.view.contact-us.phone-number')"
+                                :placeholder="trans('shop::app.products.view.contact-us.phone-number')"
+                                :aria-label="trans('shop::app.products.view.contact-us.phone-number')"
+                            />
+
+                            <x-shop::form.control-group.error control-name="contact" />
+                        </x-shop::form.control-group>
+
+                        <x-shop::form.control-group>
+                            <x-shop::form.control-group.label class="required">
+                                @lang('shop::app.products.view.contact-us.desc')
+                            </x-shop::form.control-group.label>
+
+                            <x-shop::form.control-group.control
+                                type="textarea"
+                                name="message"
+                                rules="required"
+                                :label="trans('shop::app.products.view.contact-us.message')"
+                                :placeholder="trans('shop::app.products.view.contact-us.describe-here')"
+                                :aria-label="trans('shop::app.products.view.contact-us.message')"
+                                aria-required="true"
+                                rows="6"
+                            />
+
+                            <x-shop::form.control-group.error control-name="message" />
+                        </x-shop::form.control-group>
+
+                        @if (core()->getConfigData('customer.captcha.credentials.status'))
+                            <x-shop::form.control-group class="mt-5">
+                                {!! \Webkul\Customer\Facades\Captcha::render() !!}
+
+                                <x-shop::form.control-group.error control-name="recaptcha_token" />
+                            </x-shop::form.control-group>
+                        @endif
+
+                        <div class="mt-6 flex justify-end">
+                            <button
+                                type="submit"
+                                class="primary-button rounded-2xl px-8 py-3 max-sm:rounded-lg max-sm:px-6 max-sm:py-2"
+                            >
+                                @lang('shop::app.products.view.contact-us.submit')
+                            </button>
+                        </div>
+                    </x-shop::form>
+                </x-slot>
+            </x-shop::modal>
         </script>
 
         <script type="module">
@@ -476,7 +593,7 @@
 
                 data() {
                     return {
-                        isWishlist: Boolean("{{ (boolean) auth()->guard()->user()?->wishlist_items->where('channel_id', core()->getCurrentChannel()->id)->where('product_id', $product->id)->count() }}"),
+                        isWishlist: false,
 
                         isCustomer: '{{ auth()->guard('customer')->check() }}',
 
@@ -488,6 +605,10 @@
                             buyNow: false,
                         },
                     }
+                },
+
+                mounted() {
+                    this.checkWishlistStatus();
                 },
 
                 methods: {
@@ -525,6 +646,27 @@
 
                                 this.$emitter.emit('add-flash', { type: 'warning', message: error.response.data.message });
                             });
+                    },
+
+                    checkWishlistStatus() {
+                        if (this.isCustomer) {
+                            /**
+                             * Fetches the wishlist items for the customer and checks whether the current
+                             * product exists in the wishlist. If found, `isWishlist` is set to true;
+                             * otherwise, it is set to false.
+                             *
+                             * This approach is used due to Full Page Cache (FPC) limitations. We cannot
+                             * use a replacer here because `product_id` is dynamic, and the replacer
+                             * cannot reliably detect it.
+                             */
+                            this.$axios.get('{{ route('shop.api.customers.account.wishlist.index') }}')
+                                .then(response => {
+                                    const wishlistItems = response.data.data || [];
+
+                                    this.isWishlist = Boolean(wishlistItems.find(item => item.product.id == "{{ $product->id }}")?.product?.is_wishlist);
+                                })
+                                .catch(error => {});
+                        }
                     },
 
                     addToWishlist() {
@@ -589,6 +731,25 @@
                         }
                     },
 
+                    updateQty(quantity, id) {
+                        this.isLoading = true;
+
+                        let qty = {};
+
+                        qty[id] = quantity;
+
+                        this.$axios.put('{{ route('shop.api.checkout.cart.update') }}', { qty })
+                            .then(response => {
+                                if (response.data.message) {
+                                    this.cart = response.data.data;
+                                } else {
+                                    this.$emitter.emit('add-flash', { type: 'warning', message: response.data.data.message });
+                                }
+
+                                this.isLoading = false;
+                            }).catch(error => this.isLoading = false);
+                    },
+
                     getCompareItemsStorageKey() {
                         return 'compare_items';
                     },
@@ -617,7 +778,7 @@
                                 behavior: 'smooth'
                             });
                         }
-                        
+
                         let tabElement = document.querySelector('#review-tab-button');
 
                         if (tabElement) {
@@ -637,5 +798,58 @@
                 },
             });
         </script>
+
+        <script
+            type="text/x-template"
+            id="v-product-associations-template"
+        >
+            <div ref="carouselWrapper">
+                <template v-if="isVisible">
+                    <!-- Featured Products -->
+                    <x-shop::products.carousel
+                        :title="trans('shop::app.products.view.related-product-title')"
+                        :src="route('shop.api.products.related.index', ['id' => $product->id])"
+                    />
+
+                    <!-- Up-sell Products -->
+                    <x-shop::products.carousel
+                        :title="trans('shop::app.products.view.up-sell-title')"
+                        :src="route('shop.api.products.up_sell.index', ['id' => $product->id])"
+                    />
+                </template>
+            </div>
+        </script>
+
+        <script type="module">
+            app.component('v-product-associations', {
+                template: '#v-product-associations-template',
+
+                data() {
+                    return {
+                        isVisible: false,
+                    };
+                },
+
+                mounted() {
+                    const observer = new IntersectionObserver(
+                        (entries) => {
+                            entries.forEach((entry) => {
+                                if (entry.isIntersecting) {
+                                    this.isVisible = true;
+                                    observer.unobserve(entry.target); // Stop observing
+                                }
+                            });
+                        },
+                        { threshold: 0.1 }
+                    );
+
+                    observer.observe(this.$refs.carouselWrapper);
+                }
+            });
+        </script>
+
+        @if (core()->getConfigData('customer.captcha.credentials.status'))
+            {!! \Webkul\Customer\Facades\Captcha::renderJS() !!}
+        @endif
     @endPushOnce
 </x-shop::layouts>

@@ -3,9 +3,12 @@
 namespace Webkul\Admin\Http\Controllers\Customers;
 
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Illuminate\View\View;
 use Webkul\Admin\DataGrids\Customers\CustomerDataGrid;
 use Webkul\Admin\DataGrids\Customers\View\InvoiceDataGrid;
 use Webkul\Admin\DataGrids\Customers\View\OrderDataGrid;
@@ -14,6 +17,7 @@ use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Admin\Http\Requests\MassDestroyRequest;
 use Webkul\Admin\Http\Requests\MassUpdateRequest;
 use Webkul\Admin\Mail\Customer\NewCustomerNotification;
+use Webkul\Core\Rules\PhoneNumber;
 use Webkul\Customer\Repositories\CustomerGroupRepository;
 use Webkul\Customer\Repositories\CustomerNoteRepository;
 use Webkul\Customer\Repositories\CustomerRepository;
@@ -54,7 +58,7 @@ class CustomerController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function index()
     {
@@ -62,9 +66,11 @@ class CustomerController extends Controller
             return datagrid(CustomerDataGrid::class)->process();
         }
 
+        $channels = core()->getAllChannels();
+
         $groups = $this->customerGroupRepository->findWhere([['code', '<>', 'guest']]);
 
-        return view('admin::customers.customers.index', compact('groups'));
+        return view('admin::customers.customers.index', compact('channels', 'groups'));
     }
 
     /**
@@ -73,22 +79,22 @@ class CustomerController extends Controller
     public function store(): JsonResponse
     {
         $this->validate(request(), [
-            'first_name'    => 'string|required',
-            'last_name'     => 'string|required',
-            'gender'        => 'required',
-            'email'         => 'required|unique:customers,email',
+            'first_name' => 'string|required',
+            'last_name' => 'string|required',
+            'gender' => 'required',
+            'channel_id' => 'required|integer',
+            'email' => 'required|unique:customers,email,NULL,id,channel_id,'.request('channel_id'),
             'date_of_birth' => 'date|before:today',
-            'phone'         => 'unique:customers,phone',
+            'phone' => ['unique:customers,phone', new PhoneNumber],
         ]);
 
-        $password = rand(100000, 10000000);
+        $password = Str::password(16);
 
         Event::dispatch('customer.registration.before');
 
         $data = array_merge([
-            'password'    => bcrypt($password),
+            'password' => bcrypt($password),
             'is_verified' => 1,
-            'channel_id'  => core()->getCurrentChannel()->id,
         ], request()->only([
             'first_name',
             'last_name',
@@ -100,13 +106,11 @@ class CustomerController extends Controller
             'channel_id',
         ]));
 
-        if (empty($data['phone'])) {
-            $data['phone'] = null;
-        }
+        Event::dispatch('customer.create.before');
 
         $customer = $this->customerRepository->create($data);
 
-        if (core()->getConfigData('emails.general.notifications.emails.general.notifications.customer')) {
+        if (core()->getConfigData('emails.general.notifications.emails.general.notifications.customer_account_credentials')) {
             try {
                 Mail::queue(new NewCustomerNotification($customer, $password));
             } catch (\Exception $e) {
@@ -114,8 +118,12 @@ class CustomerController extends Controller
             }
         }
 
+        Event::dispatch('customer.create.after', $customer);
+
+        Event::dispatch('customer.registration.after', $customer);
+
         return new JsonResponse([
-            'data'    => $customer,
+            'data' => $customer,
             'message' => trans('admin::app.customers.customers.index.create.create-success'),
         ]);
     }
@@ -123,17 +131,19 @@ class CustomerController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function update(int $id)
     {
+        $customer = $this->customerRepository->findOrFail($id);
+
         $this->validate(request(), [
-            'first_name'    => 'string|required',
-            'last_name'     => 'string|required',
-            'gender'        => 'required',
-            'email'         => 'required|unique:customers,email,'.$id,
+            'first_name' => 'string|required',
+            'last_name' => 'string|required',
+            'gender' => 'required',
+            'email' => 'required|unique:customers,email,'.$id.',id,channel_id,'.$customer->channel_id,
             'date_of_birth' => 'date|before:today',
-            'phone'         => 'unique:customers,phone,'.$id,
+            'phone' => ['unique:customers,phone,'.$id, new PhoneNumber],
         ]);
 
         $data = request()->only([
@@ -148,10 +158,6 @@ class CustomerController extends Controller
             'is_suspended',
         ]);
 
-        if (empty($data['phone'])) {
-            $data['phone'] = null;
-        }
-
         Event::dispatch('customer.update.before', $id);
 
         $customer = $this->customerRepository->update($data, $id);
@@ -160,9 +166,9 @@ class CustomerController extends Controller
 
         return new JsonResponse([
             'message' => trans('admin::app.customers.customers.update-success'),
-            'data'    => [
+            'data' => [
                 'customer' => $customer->fresh(),
-                'group'    => $customer->group,
+                'group' => $customer->group,
             ],
         ]);
     }
@@ -170,7 +176,7 @@ class CustomerController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy(int $id)
     {
@@ -189,15 +195,15 @@ class CustomerController extends Controller
             return redirect()->route('admin.customers.customers.index');
         }
 
-        session()->flash('error', trans('admin::app.customers.customers.view.order-pending'));
+        session()->flash('error', trans('admin::app.customers.customers.delete-pending-order-error'));
 
         return redirect()->route('admin.customers.customers.index');
     }
 
     /**
-     * Login as customer
+     * Login as customer.
      *
-     * @return \Illuminate\Http\RedirectResponse
+     * @return RedirectResponse
      */
     public function loginAsCustomer(int $id)
     {
@@ -213,7 +219,7 @@ class CustomerController extends Controller
     /**
      * To store the response of the note.
      *
-     * @return \Illuminate\Http\RedirectResponse
+     * @return RedirectResponse
      */
     public function storeNotes(int $id)
     {
@@ -224,8 +230,8 @@ class CustomerController extends Controller
         Event::dispatch('customer.note.create.before', $id);
 
         $customerNote = $this->customerNoteRepository->create([
-            'customer_id'       => $id,
-            'note'              => request()->input('note'),
+            'customer_id' => $id,
+            'note' => request()->input('note'),
             'customer_notified' => request()->input('customer_notified', 0),
         ]);
 
@@ -264,13 +270,14 @@ class CustomerController extends Controller
     /**
      * Result of search customer.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function search()
     {
         $customers = $this->customerRepository->scopeQuery(function ($query) {
-            return $query->where('email', 'like', '%'.urldecode(request()->input('query')).'%')
-                ->orWhere(DB::raw('CONCAT(first_name, " ", last_name)'), 'like', '%'.urldecode(request()->input('query')).'%')
+            return $query->where('email', db_grammar()->caseInsensitiveLike(), '%'.urldecode(request()->input('query')).'%')
+                ->orWhere('first_name', db_grammar()->caseInsensitiveLike(), '%'.urldecode(request()->input('query')).'%')
+                ->orWhere('last_name', db_grammar()->caseInsensitiveLike(), '%'.urldecode(request()->input('query')).'%')
                 ->orderBy('created_at', 'desc');
         })->paginate(self::COUNT);
 

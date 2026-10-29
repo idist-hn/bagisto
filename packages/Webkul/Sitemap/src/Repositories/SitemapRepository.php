@@ -2,69 +2,45 @@
 
 namespace Webkul\Sitemap\Repositories;
 
-use Illuminate\Support\Facades\Storage;
-use Spatie\Sitemap\Sitemap;
-use Spatie\Sitemap\Tags\Url;
 use Webkul\Core\Eloquent\Repository;
-use Webkul\Sitemap\Models\Category;
-use Webkul\Sitemap\Models\Page;
-use Webkul\Sitemap\Models\Product;
+use Webkul\Sitemap\Contracts\Sitemap;
 
 class SitemapRepository extends Repository
 {
     /**
-     * Specify Model class name
+     * Specify model class name.
      */
     public function model(): string
     {
-        return 'Webkul\Sitemap\Contracts\Sitemap';
+        return Sitemap::class;
     }
 
     /**
-     * Create.
+     * Create a new sitemap instance in storage.
      *
-     * @return mixed
+     * @return Sitemap
      */
-    public function create(array $attributes)
+    public function create(array $data)
     {
-        $sitemap = parent::create($attributes);
+        $sitemap = parent::create($data);
 
-        $this->generateSitemap($sitemap);
+        $sitemap->channels()->sync($data['channels']);
 
         return $sitemap;
     }
 
     /**
-     * Update.
+     * Update the specified sitemap instance in storage.
      *
-     * @return mixed
+     * @param  int  $id
+     * @return Sitemap
      */
-    public function update(array $attributes, $id)
+    public function update(array $data, $id)
     {
-        $sitemap = $this->find($id);
+        $sitemap = parent::update($data, $id);
 
-        Storage::delete($sitemap->path.'/'.$sitemap->file_name);
-
-        $sitemap = parent::update($attributes, $id);
-
-        $this->generateSitemap($sitemap);
+        $sitemap->channels()->sync($data['channels']);
 
         return $sitemap;
-    }
-
-    /**
-     * Update.
-     *
-     * @param  \Webkul\Sitemap\Contracts\Sitemap  $sitemap
-     * @return void
-     */
-    public function generateSitemap($sitemap)
-    {
-        Sitemap::create()
-            ->add(Url::create('/'))
-            ->add(Category::all())
-            ->add(Product::all())
-            ->add(Page::all())
-            ->writeToDisk('public', $sitemap->path.'/'.$sitemap->file_name);
     }
 }

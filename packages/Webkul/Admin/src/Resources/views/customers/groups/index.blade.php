@@ -38,7 +38,11 @@
 
                 {!! view_render_event('bagisto.admin.customers.groups.list.before') !!}
 
-                <x-admin::datagrid src="{{ route('admin.customers.groups.index') }}" ref="datagrid">
+                <x-admin::datagrid
+                    src="{{ route('admin.customers.groups.index') }}"
+                    ref="datagrid"
+                    :shimmer-columns="4"
+                >
                     <template #body="{
                         isLoading,
                         available,
@@ -48,7 +52,9 @@
                         performAction
                     }">
                         <template v-if="isLoading">
-                            <x-admin::shimmer.datagrid.table.body />
+                            <x-admin::shimmer.datagrid.table.body
+                                :columns="4"
+                            />
                         </template>
 
                         <template v-else>
@@ -124,6 +130,7 @@
 
                             <!-- Modal Content -->
                             <x-slot:content>
+                                <!-- Code -->
                                 <x-admin::form.control-group>
                                     <x-admin::form.control-group.label class="required">
                                         @lang('admin::app.customers.groups.index.create.code')
@@ -146,6 +153,7 @@
                                     <x-admin::form.control-group.error control-name="code" />
                                 </x-admin::form.control-group>
 
+                                <!-- Last Name -->
                                 <x-admin::form.control-group>
                                     <x-admin::form.control-group.label class="required">
                                         @lang('admin::app.customers.groups.index.create.name')

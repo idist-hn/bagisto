@@ -2,6 +2,8 @@
 
 namespace Webkul\Admin\Http\Controllers\Sales;
 
+use Illuminate\Http\Response;
+use Illuminate\View\View;
 use Webkul\Admin\DataGrids\Sales\OrderShipmentDataGrid;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Sales\Repositories\OrderItemRepository;
@@ -24,7 +26,7 @@ class ShipmentController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function index()
     {
@@ -38,13 +40,16 @@ class ShipmentController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function create(int $orderId)
     {
         $order = $this->orderRepository->findOrFail($orderId);
 
-        if (! $order->channel || ! $order->canShip()) {
+        if (
+            ! $order->channel
+            || ! $order->canShip()
+        ) {
             session()->flash('error', trans('admin::app.sales.shipments.create.creation-error'));
 
             return redirect()->back();
@@ -56,7 +61,7 @@ class ShipmentController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(int $orderId)
     {
@@ -69,11 +74,17 @@ class ShipmentController extends Controller
         }
 
         $this->validate(request(), [
-            'shipment.source'    => 'required',
+            'shipment.source' => 'required',
             'shipment.items.*.*' => 'required|numeric|min:0',
         ]);
 
         $data = request()->only(['shipment', 'carrier_name']);
+
+        if (! $order->ownsItems(array_keys((array) ($data['shipment']['items'] ?? [])))) {
+            session()->flash('error', trans('admin::app.sales.shipments.create.quantity-invalid'));
+
+            return redirect()->back();
+        }
 
         if (! $this->isInventoryValidate($data)) {
             session()->flash('error', trans('admin::app.sales.shipments.create.quantity-invalid'));
@@ -160,7 +171,7 @@ class ShipmentController extends Controller
     /**
      * Show the view for the specified resource.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function view(int $id)
     {

@@ -8,15 +8,20 @@ use Illuminate\Support\ServiceProvider;
 use Webkul\Installer\Console\Commands\Installer as InstallerCommand;
 use Webkul\Installer\Http\Middleware\CanInstall;
 use Webkul\Installer\Http\Middleware\Locale;
+use Webkul\Installer\Http\Middleware\UseFileSession;
+use Webkul\Installer\Listeners\Installer;
 
 class InstallerServiceProvider extends ServiceProvider
 {
     /**
-     * Indicates if loading of the provider is deferred.
+     * Register the service provider.
      *
-     * @var bool
+     * @return void
      */
-    protected $defer = false;
+    public function register()
+    {
+        $this->registerCommands();
+    }
 
     /**
      * Bootstrap the application events.
@@ -27,29 +32,21 @@ class InstallerServiceProvider extends ServiceProvider
     {
         $router->middlewareGroup('install', [CanInstall::class]);
 
+        $router->aliasMiddleware('installer_locale', Locale::class);
+
+        $router->aliasMiddleware('installer_file_session', UseFileSession::class);
+
         $this->loadRoutesFrom(__DIR__.'/../Routes/web.php');
 
         $this->loadViewsFrom(__DIR__.'/../Resources/views', 'installer');
 
         $this->loadTranslationsFrom(__DIR__.'/../Resources/lang', 'installer');
 
-        $router->aliasMiddleware('installer_locale', Locale::class);
-
-        Event::listen('bagisto.installed', 'Webkul\Installer\Listeners\Installer@installed');
+        Event::listen('bagisto.installed', [Installer::class, 'installed']);
     }
 
     /**
-     * Register the service provider
-     *
-     * @return void
-     */
-    public function register()
-    {
-        $this->registerCommands();
-    }
-
-    /**
-     * Register the Installer Commands of this package.
+     * Register the commands for this package.
      */
     protected function registerCommands(): void
     {

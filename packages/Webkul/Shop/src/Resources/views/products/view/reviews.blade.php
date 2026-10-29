@@ -30,11 +30,11 @@
                         @submit="handleSubmit($event, store)"
                         enctype="multipart/form-data"
                     >
-                        <div class="max-w-[286px]">
+                        <div class="max-w-71.5">
                             <x-shop::form.control-group>
                                 <x-shop::form.control-group.control
                                     type="image"
-                                    class="!mb-0 !p-0 max-md:gap-1.5"
+                                    class="mb-0! p-0! max-md:gap-1.5"
                                     name="attachments"
                                     :label="trans('shop::app.products.view.reviews.attachments')"
                                     :is-multiple="true"
@@ -54,14 +54,16 @@
                                     @lang('shop::app.products.view.reviews.rating')
                                 </x-shop::form.control-group.label>
 
-                                <span
-                                    class="icon-star-fill cursor-pointer text-2xl"
-                                    role="presentation"
+                                <button
+                                    type="button"
                                     v-for="rating in [1,2,3,4,5]"
+                                    class="icon-star-fill cursor-pointer text-2xl focus-visible:ring-2 focus-visible:ring-navyBlue focus-visible:ring-offset-2 rounded"
                                     :class="appliedRatings >= rating ? 'text-amber-500' : 'text-zinc-500'"
+                                    :aria-label="@js(trans('shop::app.products.view.reviews.rating')) + ' ' + rating + ' ' + @js(trans('shop::app.products.view.reviews.stars'))"
+                                    :aria-pressed="appliedRatings >= rating ? 'true' : 'false'"
                                     @click="appliedRatings = rating"
                                 >
-                                </span>
+                                </button>
 
                                 <v-field
                                     type="hidden"
@@ -72,10 +74,7 @@
                                 <x-shop::form.control-group.error control-name="rating" />
                             </x-shop::form.control-group>
 
-                            @if (
-                                core()->getConfigData('catalog.products.review.guest_review')
-                                && ! auth()->guard('customer')->user()
-                            )
+                            @if (core()->getConfigData('catalog.products.review.guest_review') && !auth()->guard('customer')->user())
                                 <x-shop::form.control-group>
                                     <x-shop::form.control-group.label class="required">
                                         @lang('shop::app.products.view.reviews.name')
@@ -132,7 +131,7 @@
 
                             <div class="mt-4 flex justify-start gap-4 max-xl:mb-5 max-sm:mb-5 max-sm:flex-wrap max-sm:justify-normal max-sm:gap-x-0">
                                 <button
-                                    class="primary-button w-full max-w-[374px] rounded-2xl px-11 py-4 text-center max-md:max-w-full max-md:rounded-lg max-md:py-3 max-sm:py-1.5"
+                                    class="primary-button w-full max-w-93.5 rounded-2xl px-11 py-4 text-center max-md:max-w-full max-md:rounded-lg max-md:py-3 max-sm:py-1.5"
                                     type='submit'
                                 >
                                     @lang('shop::app.products.view.reviews.submit-review')
@@ -190,14 +189,14 @@
                                 </div>
 
                                 <!-- Ratings By Individual Stars -->
-                                <div class="grid max-w-[365px] flex-wrap gap-y-3 max-md:max-w-full">
+                                <div class="grid max-w-91.25 flex-wrap gap-y-3 max-md:max-w-full">
                                     @for ($i = 5; $i >= 1; $i--)
                                         <div class="row grid grid-cols-[1fr_2fr] items-center gap-4 max-md:grid-cols-[0.5fr_2fr] max-sm:flex-wrap max-sm:gap-0">
-                                            <div class="whitespace-nowrap text-base font-medium max-sm:text-sm">{{ $i }} Stars</div>
+                                            <div class="whitespace-nowrap text-base font-medium max-sm:text-sm">{{ $i }} @lang('shop::app.products.view.reviews.stars')</div>
 
-                                            <div class="h-4 w-[275px] max-w-full rounded-sm bg-neutral-200 max-sm:h-3.5 max-sm:w-full">
+                                            <div class="h-4 w-68.75 max-w-full rounded-xs bg-neutral-200 max-sm:h-3.5 max-sm:w-full">
                                                 <div
-                                                    class="h-4 rounded-sm bg-amber-500 max-sm:h-3.5"
+                                                    class="h-4 rounded-xs bg-amber-500 max-sm:h-3.5"
                                                     style="width: {{ $percentageRatings[$i] }}%"
                                                 ></div>
                                             </div>
@@ -208,17 +207,17 @@
                                 <!-- Create Button -->
                                 @if(core()->getConfigData('catalog.products.review.customer_review'))
                                     @if (
-                                        core()->getConfigData('catalog.products.review.guest_review')
-                                        || auth()->guard('customer')->user()
-                                    )
-                                        <div
-                                            class="flex cursor-pointer items-center justify-center gap-x-4 rounded-xl border border-navyBlue px-4 py-3 max-sm:rounded-lg max-sm:py-1.5"
-                                            @click="canReview = true"
-                                        >
-                                            <span class="icon-pen text-2xl"></span>
+                                            core()->getConfigData('catalog.products.review.guest_review')
+                                            || auth()->guard('customer')->user()
+                                        )
+                                            <div
+                                                class="flex cursor-pointer items-center justify-center gap-x-4 rounded-xl border border-navyBlue px-4 py-3 max-sm:rounded-lg max-sm:py-1.5"
+                                                @click="canReview = true"
+                                            >
+                                                <span class="icon-pen text-2xl"></span>
 
-                                            @lang('shop::app.products.view.reviews.write-a-review')
-                                        </div>
+                                                @lang('shop::app.products.view.reviews.write-a-review')
+                                            </div>
                                     @endif
                                 @endif
                             </div>
@@ -244,9 +243,9 @@
 
                     <!-- Empty Review Section -->
                     <template v-else>
-                        <div class="m-auto grid h-[476px] w-full place-content-center items-center justify-items-center text-center max-md:h-60">
+                        <div class="m-auto grid h-119 w-full place-content-center items-center justify-items-center text-center max-md:h-60">
                             <img
-                                class="max-md:h-32 max-md:w-32 max-sm:h-[100px] max-sm:w-[100px]"
+                                class="max-md:h-32 max-md:w-32 max-sm:h-25 max-sm:w-25"
                                 src="{{ bagisto_asset('images/review.png') }}"
                                 alt=""
                                 title=""
@@ -258,17 +257,17 @@
 
                             @if(core()->getConfigData('catalog.products.review.customer_review'))
                                 @if (
-                                    core()->getConfigData('catalog.products.review.guest_review')
-                                    || auth()->guard('customer')->user()
-                                )
-                                    <div
-                                        class="mt-8 flex cursor-pointer items-center gap-x-4 rounded-xl border border-navyBlue px-4 py-2.5 max-sm:mt-5 max-sm:gap-x-1.5 max-sm:rounded-lg max-sm:py-1.5 max-sm:text-sm"
-                                        @click="canReview = true"
-                                    >
-                                        <span class="icon-pen text-2xl max-sm:text-lg"></span>
+                                        core()->getConfigData('catalog.products.review.guest_review')
+                                        || auth()->guard('customer')->user()
+                                    )
+                                        <div
+                                            class="mt-8 flex cursor-pointer items-center gap-x-4 rounded-xl border border-navyBlue px-4 py-2.5 max-sm:mt-5 max-sm:gap-x-1.5 max-sm:rounded-lg max-sm:py-1.5 max-sm:text-sm"
+                                            @click="canReview = true"
+                                        >
+                                            <span class="icon-pen text-2xl max-sm:text-lg"></span>
 
-                                        @lang('shop::app.products.view.reviews.write-a-review')
-                                    </div>
+                                            @lang('shop::app.products.view.reviews.write-a-review')
+                                        </div>
                                 @endif
                             @endif
                         </div>
@@ -287,7 +286,7 @@
             <div class="flex gap-5">
                 <template v-if="review.profile">
                     <img
-                        class="flex max-h-[100px] min-h-[100px] min-w-[100px] max-w-[100px] items-center justify-center rounded-xl"
+                        class="flex max-h-25 min-h-25 min-w-25 max-w-25 items-center justify-center rounded-xl"
                         :src="review.profile"
                         :alt="review.name"
                         :title="review.name"
@@ -296,7 +295,7 @@
 
                 <template v-else>
                     <div
-                        class="flex max-h-[100px] min-h-[100px] min-w-[100px] max-w-[100px] items-center justify-center rounded-xl bg-zinc-100"
+                        class="flex max-h-25 min-h-25 min-w-25 max-w-25 items-center justify-center rounded-xl bg-zinc-100"
                         :title="review.name"
                     >
                         <span class="text-2xl font-semibold text-zinc-500">
@@ -333,26 +332,28 @@
                     @{{ review.comment }}
                 </p>
 
-                <button
-                    class="secondary-button min-h-[34px] rounded-lg px-2 py-1 text-sm max-md:rounded-lg"
-                    @click="translate"
-                >
-                    <!-- Spinner -->
-                    <template v-if="isLoading">
-                        <img
-                            class="h-5 w-5 animate-spin text-blue-600"
-                            src="{{ bagisto_asset('images/spinner.svg') }}"
-                        />
+                @if ((bool) core()->getConfigData('magic_ai.storefront_features.review_translation.enabled'))
+                    <button
+                        class="secondary-button min-h-8.5 rounded-lg px-2 py-1 text-sm max-md:rounded-lg"
+                        @click="translate"
+                    >
+                        <!-- Spinner -->
+                        <template v-if="isLoading">
+                            <img
+                                class="h-5 w-5 animate-spin text-blue-600"
+                                src="{{ bagisto_asset('images/spinner.svg') }}"
+                            />
 
-                        @lang('shop::app.products.view.reviews.translating')
-                    </template>
+                            @lang('shop::app.products.view.reviews.translating')
+                        </template>
 
-                    <template v-else>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" role="presentation"> <g clip-path="url(#clip0_3148_2242)"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12.1484 9.31989L9.31995 12.1483L19.9265 22.7549L22.755 19.9265L12.1484 9.31989ZM12.1484 10.7341L10.7342 12.1483L13.5626 14.9767L14.9768 13.5625L12.1484 10.7341Z" fill="#060C3B"/> <path d="M11.0877 3.30949L13.5625 4.44748L16.0374 3.30949L14.8994 5.78436L16.0374 8.25924L13.5625 7.12124L11.0877 8.25924L12.2257 5.78436L11.0877 3.30949Z" fill="#060C3B"/> <path d="M2.39219 2.39217L5.78438 3.95197L9.17656 2.39217L7.61677 5.78436L9.17656 9.17655L5.78438 7.61676L2.39219 9.17655L3.95198 5.78436L2.39219 2.39217Z" fill="#060C3B"/> <path d="M3.30947 11.0877L5.78434 12.2257L8.25922 11.0877L7.12122 13.5626L8.25922 16.0374L5.78434 14.8994L3.30947 16.0374L4.44746 13.5626L3.30947 11.0877Z" fill="#060C3B"/> </g> <defs> <clipPath id="clip0_3148_2242"> <rect width="24" height="24" fill="white"/> </clipPath> </defs> </svg>
+                        <template v-else>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" role="presentation"> <g clip-path="url(#clip0_3148_2242)"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12.1484 9.31989L9.31995 12.1483L19.9265 22.7549L22.755 19.9265L12.1484 9.31989ZM12.1484 10.7341L10.7342 12.1483L13.5626 14.9767L14.9768 13.5625L12.1484 10.7341Z" fill="#060C3B"/> <path d="M11.0877 3.30949L13.5625 4.44748L16.0374 3.30949L14.8994 5.78436L16.0374 8.25924L13.5625 7.12124L11.0877 8.25924L12.2257 5.78436L11.0877 3.30949Z" fill="#060C3B"/> <path d="M2.39219 2.39217L5.78438 3.95197L9.17656 2.39217L7.61677 5.78436L9.17656 9.17655L5.78438 7.61676L2.39219 9.17655L3.95198 5.78436L2.39219 2.39217Z" fill="#060C3B"/> <path d="M3.30947 11.0877L5.78434 12.2257L8.25922 11.0877L7.12122 13.5626L8.25922 16.0374L5.78434 14.8994L3.30947 16.0374L4.44746 13.5626L3.30947 11.0877Z" fill="#060C3B"/> </g> <defs> <clipPath id="clip0_3148_2242"> <rect width="24" height="24" fill="white"/> </clipPath> </defs> </svg>
 
-                        @lang('shop::app.products.view.reviews.translate')
-                    </template>
-                </button>
+                            @lang('shop::app.products.view.reviews.translate')
+                        </template>
+                    </button>
+                @endif
 
                 <!-- Review Attachments -->
                 <div
@@ -367,7 +368,7 @@
                             v-if="file.type == 'image'"
                         >
                             <img
-                                class="max-h-[50px] min-w-[50px] cursor-pointer rounded-xl"
+                                class="max-h-12.5 min-w-12.5 cursor-pointer rounded-xl"
                                 :src="file.url"
                                 :alt="review.name"
                                 :title="review.name"
@@ -382,7 +383,7 @@
                             v-else
                         >
                             <video
-                                class="max-h-[50px] min-w-[50px] cursor-pointer rounded-xl"
+                                class="max-h-12.5 min-w-12.5 cursor-pointer rounded-xl"
                                 :src="file.url"
                                 :alt="review.name"
                                 :title="review.name"
@@ -408,7 +409,7 @@
                 <div class="flex items-center gap-2.5">
                     <img
                         v-if="review.profile"
-                        class="flex max-h-10 min-h-10 min-w-10 max-w-10 items-center justify-center rounded-full"
+                        class="min-h-10 min-w-10 max-w-10 flex max-h-10 items-center justify-center rounded-full"
                         :src="review.profile"
                         :alt="review.name"
                         :title="review.name"
@@ -416,7 +417,7 @@
 
                     <div
                         v-else
-                        class="flex max-h-10 min-h-10 min-w-10 max-w-10 items-center justify-center rounded-full bg-zinc-100"
+                        class="min-h-10 min-w-10 max-w-10 flex max-h-10 items-center justify-center rounded-full bg-zinc-100"
                         :title="review.name"
                     >
                         <span class="text-xs font-semibold text-zinc-500">
@@ -450,26 +451,28 @@
                         @{{ review.comment }}
                     </p>
 
-                    <button
-                        class="secondary-button mt-2.5 min-h-[34px] rounded-lg px-4 py-2.5 text-base max-md:rounded-lg max-sm:px-3 max-sm:py-1 max-sm:text-xs"
-                        @click="translate"
-                    >
-                        <!-- Spinner -->
-                        <template v-if="isLoading">
-                            <img
-                                class="h-5 w-5 animate-spin text-blue-600"
-                                src="{{ bagisto_asset('images/spinner.svg') }}"
-                            />
+                    @if ((bool) core()->getConfigData('magic_ai.storefront_features.review_translation.enabled'))
+                        <button
+                            class="secondary-button mt-2.5 min-h-8.5 rounded-lg px-4 py-2.5 text-base max-md:rounded-lg max-sm:px-3 max-sm:py-1 max-sm:text-xs"
+                            @click="translate"
+                        >
+                            <!-- Spinner -->
+                            <template v-if="isLoading">
+                                <img
+                                    class="h-5 w-5 animate-spin text-blue-600"
+                                    src="{{ bagisto_asset('images/spinner.svg') }}"
+                                />
 
-                            @lang('shop::app.products.view.reviews.translating')
-                        </template>
+                                @lang('shop::app.products.view.reviews.translating')
+                            </template>
 
-                        <template v-else>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" role="presentation"> <g clip-path="url(#clip0_3148_2242)"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12.1484 9.31989L9.31995 12.1483L19.9265 22.7549L22.755 19.9265L12.1484 9.31989ZM12.1484 10.7341L10.7342 12.1483L13.5626 14.9767L14.9768 13.5625L12.1484 10.7341Z" fill="#060C3B"/> <path d="M11.0877 3.30949L13.5625 4.44748L16.0374 3.30949L14.8994 5.78436L16.0374 8.25924L13.5625 7.12124L11.0877 8.25924L12.2257 5.78436L11.0877 3.30949Z" fill="#060C3B"/> <path d="M2.39219 2.39217L5.78438 3.95197L9.17656 2.39217L7.61677 5.78436L9.17656 9.17655L5.78438 7.61676L2.39219 9.17655L3.95198 5.78436L2.39219 2.39217Z" fill="#060C3B"/> <path d="M3.30947 11.0877L5.78434 12.2257L8.25922 11.0877L7.12122 13.5626L8.25922 16.0374L5.78434 14.8994L3.30947 16.0374L4.44746 13.5626L3.30947 11.0877Z" fill="#060C3B"/> </g> <defs> <clipPath id="clip0_3148_2242"> <rect width="24" height="24" fill="white"/> </clipPath> </defs> </svg>
+                            <template v-else>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" role="presentation"> <g clip-path="url(#clip0_3148_2242)"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12.1484 9.31989L9.31995 12.1483L19.9265 22.7549L22.755 19.9265L12.1484 9.31989ZM12.1484 10.7341L10.7342 12.1483L13.5626 14.9767L14.9768 13.5625L12.1484 10.7341Z" fill="#060C3B"/> <path d="M11.0877 3.30949L13.5625 4.44748L16.0374 3.30949L14.8994 5.78436L16.0374 8.25924L13.5625 7.12124L11.0877 8.25924L12.2257 5.78436L11.0877 3.30949Z" fill="#060C3B"/> <path d="M2.39219 2.39217L5.78438 3.95197L9.17656 2.39217L7.61677 5.78436L9.17656 9.17655L5.78438 7.61676L2.39219 9.17655L3.95198 5.78436L2.39219 2.39217Z" fill="#060C3B"/> <path d="M3.30947 11.0877L5.78434 12.2257L8.25922 11.0877L7.12122 13.5626L8.25922 16.0374L5.78434 14.8994L3.30947 16.0374L4.44746 13.5626L3.30947 11.0877Z" fill="#060C3B"/> </g> <defs> <clipPath id="clip0_3148_2242"> <rect width="24" height="24" fill="white"/> </clipPath> </defs> </svg>
 
-                            @lang('shop::app.products.view.reviews.translate')
-                        </template>
-                    </button>
+                                @lang('shop::app.products.view.reviews.translate')
+                            </template>
+                        </button>
+                    @endif
                 </div>
 
                 <!-- Review Attachments -->
@@ -485,7 +488,7 @@
                             v-if="file.type == 'image'"
                         >
                             <img
-                                class="max-h-20 min-w-20 cursor-pointer rounded-xl"
+                                class="min-w-20 max-h-20 cursor-pointer rounded-xl"
                                 :src="file.url"
                                 :alt="review.name"
                                 :title="review.name"
@@ -499,7 +502,7 @@
                             v-else
                         >
                             <video
-                                class="max-h-20 min-w-20 cursor-pointer rounded-xl"
+                                class="min-w-20 max-h-20 cursor-pointer rounded-xl"
                                 :src="file.url"
                                 :alt="review.name"
                                 :title="review.name"
@@ -531,11 +534,29 @@
                     },
 
                     meta: {},
+
+                    observer: null,
+
                 }
             },
 
             mounted() {
-                this.get();
+                this.observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            this.get();
+                            this.observer.disconnect();
+                        }
+                    });
+                });
+
+                this.observer.observe(this.$el);
+            },
+
+            beforeUnmount() {
+                if (this.observer) {
+                    this.observer.disconnect();
+                }
             },
 
             methods: {
@@ -558,9 +579,11 @@
                 },
 
                 store(params, { resetForm, setErrors }) {
-                    let selectedFiles = this.$refs.reviewImages.uploadedFiles.filter(obj => obj.file instanceof File).map(obj => obj.file);
+                    let selectedFiles = this.$refs.reviewImages.uploadedFiles
+                        .filter(obj => obj.file instanceof File)
+                        .map(obj => obj.file);
 
-                    params.attachments = { ...params.attachments, ...selectedFiles };
+                    params.attachments = selectedFiles;
 
                     this.$axios.post('{{ route('shop.api.products.reviews.store', $product->id) }}', params, {
                             headers: {
@@ -612,7 +635,7 @@
                     });
 
                     return data;
-                }
+                },
             },
 
             methods: {

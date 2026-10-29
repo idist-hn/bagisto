@@ -3,6 +3,8 @@
 namespace Webkul\Admin\Http\Controllers\Customers;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Event;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Admin\Http\Requests\AddressRequest;
@@ -23,27 +25,13 @@ class AddressController extends Controller
     ) {}
 
     /**
-     * Fetch address by customer id.
-     *
-     * @return \Illuminate\View\View
+     * Send the operator to the customer the addresses belong to, which is where they are managed.
      */
-    public function index(int $id)
+    public function index(int $id): RedirectResponse
     {
-        $customer = $this->customerRepository->find($id);
+        $this->customerRepository->findOrFail($id);
 
-        return view('admin::customers.addresses.index', compact('customer'));
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\View\View
-     */
-    public function create(int $id)
-    {
-        $customer = $this->customerRepository->find($id);
-
-        return view('admin::customers.addresses.create', compact('customer'));
+        return redirect()->route('admin.customers.customers.view', $id);
     }
 
     /**
@@ -51,8 +39,9 @@ class AddressController extends Controller
      */
     public function store(int $id, AddressRequest $request): JsonResponse
     {
+        $this->customerRepository->findOrFail($id);
+
         $data = array_merge($request->only([
-            'customer_id',
             'company_name',
             'vat_id',
             'first_name',
@@ -71,6 +60,12 @@ class AddressController extends Controller
 
         Event::dispatch('customer.addresses.create.before');
 
+        if (! empty($data['default_address'])) {
+            $this->customerAddressRepository->where('customer_id', $id)
+                ->where('default_address', 1)
+                ->update(['default_address' => 0]);
+        }
+
         $address = $this->customerAddressRepository->create(array_merge($data, [
             'customer_id' => $id,
         ]));
@@ -79,29 +74,18 @@ class AddressController extends Controller
 
         return new JsonResponse([
             'message' => trans('admin::app.customers.customers.view.address.create-success'),
-            'data'    => new AddressResource($address),
+            'data' => new AddressResource($address),
         ]);
     }
 
     /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\View\View
-     */
-    public function edit(int $id)
-    {
-        $address = $this->customerAddressRepository->find($id);
-
-        return view('admin::customers.addresses.edit', compact('address'));
-    }
-
-    /**
-     * Edit's the pre made resource of customer called address.
+     * Update the customer's address, which stays with the customer it was created for.
      */
     public function update(int $id, AddressRequest $request): JsonResponse
     {
+        $customerId = $this->customerAddressRepository->findOrFail($id)->customer_id;
+
         $data = array_merge($request->only([
-            'customer_id',
             'company_name',
             'vat_id',
             'first_name',
@@ -120,13 +104,19 @@ class AddressController extends Controller
 
         Event::dispatch('customer.addresses.update.before', $id);
 
+        if (! empty($data['default_address'])) {
+            $this->customerAddressRepository->where('customer_id', $customerId)
+                ->where('default_address', 1)
+                ->update(['default_address' => 0]);
+        }
+
         $address = $this->customerAddressRepository->update($data, $id);
 
         Event::dispatch('customer.addresses.update.after', $address);
 
         return new JsonResponse([
             'message' => trans('admin::app.customers.customers.view.address.update-success'),
-            'data'    => new AddressResource($address),
+            'data' => new AddressResource($address),
         ]);
     }
 
@@ -134,7 +124,7 @@ class AddressController extends Controller
      * To change the default address or make the default address,
      * by default when first address is created will be the default address.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function makeDefault($id)
     {
@@ -143,22 +133,24 @@ class AddressController extends Controller
         }
 
         $address = $this->customerAddressRepository->findOneWhere([
-            'id'              => request('set_as_default'),
-            'customer_id'     => $id,
+            'id' => request('set_as_default'),
+            'customer_id' => $id,
         ]);
+
+        abort_unless($address, 404);
 
         $address->update(['default_address' => 1]);
 
         return new JsonResponse([
             'message' => trans('admin::app.customers.customers.view.address.set-default-success'),
-            'data'    => $address,
+            'data' => $address,
         ]);
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy(int $id)
     {

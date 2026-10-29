@@ -3,13 +3,20 @@
 namespace Webkul\Core\Repositories;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
+use Prettus\Repository\Events\RepositoryEntityCreated;
+use Prettus\Repository\Events\RepositoryEntityUpdated;
 use Webkul\Core\Contracts\Locale;
 use Webkul\Core\Eloquent\Repository;
+use Webkul\Core\Traits\Sanitizer;
 
 class LocaleRepository extends Repository
 {
+    use Sanitizer;
+
     /**
      * Specify model class name.
      */
@@ -19,37 +26,43 @@ class LocaleRepository extends Repository
     }
 
     /**
-     * Create.
+     * Create a locale, invalidating the cached reads only once its image is
+     * written, so a concurrent read cannot cache a partial one.
      *
      * @return mixed
      */
     public function create(array $attributes)
     {
-        Event::dispatch('core.locale.create.before');
+        $locale = DB::transaction(function () use ($attributes) {
+            $locale = parent::create($attributes);
 
-        $locale = parent::create($attributes);
+            $this->uploadImage($attributes, $locale);
 
-        $this->uploadImage($attributes, $locale);
+            return $locale;
+        });
 
-        Event::dispatch('core.locale.create.after', $locale);
+        Event::dispatch(new RepositoryEntityCreated($this, $locale));
 
         return $locale;
     }
 
     /**
-     * Update.
+     * Update a locale, invalidating the cached reads only once its image is
+     * written, so a concurrent read cannot cache a partial one.
      *
      * @return mixed
      */
     public function update(array $attributes, $id)
     {
-        Event::dispatch('core.locale.update.before', $id);
+        $locale = DB::transaction(function () use ($attributes, $id) {
+            $locale = parent::update($attributes, $id);
 
-        $locale = parent::update($attributes, $id);
+            $this->uploadImage($attributes, $locale);
 
-        $this->uploadImage($attributes, $locale);
+            return $locale;
+        });
 
-        Event::dispatch('core.locale.update.after', $locale);
+        Event::dispatch(new RepositoryEntityUpdated($this, $locale));
 
         return $locale;
     }
@@ -66,7 +79,7 @@ class LocaleRepository extends Repository
 
         $locale = parent::find($id);
 
-        $locale->delete($id);
+        parent::delete($id);
 
         Storage::delete((string) $locale->logo_path);
 
@@ -76,7 +89,7 @@ class LocaleRepository extends Repository
     /**
      * Upload image.
      *
-     * @param  array  $attributes
+     * @param  array  $localeImages
      * @param  \Webkul\Core\Models\Locale  $locale
      * @return void
      */
@@ -96,10 +109,18 @@ class LocaleRepository extends Repository
 
         foreach ($localeImages['logo_path'] as $image) {
             if ($image instanceof UploadedFile) {
+                $mimeType = $image->getMimeType();
+
                 $locale->logo_path = $image->storeAs(
                     'locales',
                     $locale->code.'.'.$image->getClientOriginalExtension()
                 );
+
+                if (! $this->sanitizeSVG($locale->logo_path, $mimeType)) {
+                    throw ValidationException::withMessages([
+                        'logo_path' => trans('core::app.errors.invalid-svg'),
+                    ]);
+                }
 
                 $locale->save();
             }

@@ -7,18 +7,22 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\DB;
+use Webkul\Attribute\Enums\AttributeTypeEnum;
 use Webkul\Attribute\Repositories\AttributeRepository;
 use Webkul\Core\Eloquent\Repository;
 use Webkul\Customer\Repositories\CustomerRepository;
 use Webkul\Marketing\Repositories\SearchSynonymRepository;
 use Webkul\Product\Contracts\Product;
+use Webkul\Product\Enums\SearchContextEnum;
+use Webkul\Product\Enums\SearchEngineEnum;
+use Webkul\Product\Services\Search\SearchEngineManager;
 
 class ProductRepository extends Repository
 {
     /**
-     * Search engine.
+     * Search context (storefront or admin).
      */
-    protected $searchEngine = 'database';
+    protected SearchContextEnum $searchContext = SearchContextEnum::STOREFRONT;
 
     /**
      * Create a new repository instance.
@@ -29,8 +33,8 @@ class ProductRepository extends Repository
         protected CustomerRepository $customerRepository,
         protected AttributeRepository $attributeRepository,
         protected ProductAttributeValueRepository $productAttributeValueRepository,
-        protected ElasticSearchRepository $elasticSearchRepository,
         protected SearchSynonymRepository $searchSynonymRepository,
+        protected SearchEngineManager $searchEngineManager,
         Container $container
     ) {
         parent::__construct($container);
@@ -47,7 +51,7 @@ class ProductRepository extends Repository
     /**
      * Create product.
      *
-     * @return \Webkul\Product\Contracts\Product
+     * @return Product
      */
     public function create(array $data)
     {
@@ -63,13 +67,15 @@ class ProductRepository extends Repository
      *
      * @param  int  $id
      * @param  array  $attributes
-     * @return \Webkul\Product\Contracts\Product
+     * @return Product
      */
     public function update(array $data, $id, $attributes = [])
     {
         $product = $this->findOrFail($id);
 
-        $product = $product->getTypeInstance()->update($data, $id, $attributes);
+        $product = DB::transaction(
+            fn () => $product->getTypeInstance()->update($data, $id, $attributes)
+        );
 
         $product->refresh();
 
@@ -77,10 +83,24 @@ class ProductRepository extends Repository
     }
 
     /**
+     * Suggest products based on query.
+     */
+    public function getSuggestions(?string $query): ?string
+    {
+        if (empty($query)) {
+            return null;
+        }
+
+        return $this->searchEngineManager
+            ->engine($this->searchContext)
+            ->getSuggestions($query);
+    }
+
+    /**
      * Copy product.
      *
      * @param  int  $id
-     * @return \Webkul\Product\Contracts\Product
+     * @return Product
      */
     public function copy($id)
     {
@@ -104,11 +124,11 @@ class ProductRepository extends Repository
     }
 
     /**
-     * Copy product.
+     * Set the search context (storefront or admin).
      */
-    public function setSearchEngine(string $searchEngine): self
+    public function setSearchContext(SearchContextEnum $context): self
     {
-        $this->searchEngine = $searchEngine;
+        $this->searchContext = $context;
 
         return $this;
     }
@@ -118,14 +138,14 @@ class ProductRepository extends Repository
      *
      * @param  string  $code
      * @param  mixed  $value
-     * @return \Webkul\Product\Contracts\Product
+     * @return Product
      */
     public function findByAttributeCode($code, $value)
     {
         $attribute = $this->attributeRepository->findOneByField('code', $code);
 
         $attributeValues = $this->productAttributeValueRepository->findWhere([
-            'attribute_id'          => $attribute->id,
+            'attribute_id' => $attribute->id,
             $attribute->column_name => $value,
         ]);
 
@@ -135,10 +155,14 @@ class ProductRepository extends Repository
                     ->where('channel', core()->getRequestedChannelCode())
                     ->where('locale', core()->getRequestedLocaleCode());
 
-                if ($attributeValues->isEmpty()) {
+                if ($filteredAttributeValues->isEmpty()) {
                     $filteredAttributeValues = $attributeValues
                         ->where('channel', core()->getRequestedChannelCode())
                         ->where('locale', core()->getDefaultLocaleCodeFromDefaultChannel());
+                }
+
+                if ($filteredAttributeValues->isEmpty()) {
+                    $filteredAttributeValues = $attributeValues;
                 }
             } else {
                 $filteredAttributeValues = $attributeValues
@@ -153,6 +177,10 @@ class ProductRepository extends Repository
                     $filteredAttributeValues = $attributeValues
                         ->where('locale', core()->getDefaultLocaleCodeFromDefaultChannel());
                 }
+
+                if ($filteredAttributeValues->isEmpty()) {
+                    $filteredAttributeValues = $attributeValues;
+                }
             } else {
                 $filteredAttributeValues = $attributeValues;
             }
@@ -166,18 +194,12 @@ class ProductRepository extends Repository
      */
     public function findBySlug(string $slug): ?Product
     {
-        if ($this->searchEngine == 'elastic') {
-            $indices = $this->elasticSearchRepository->search([
-                'url_key' => $slug,
-            ], [
-                'type'  => '',
-                'from'  => 0,
-                'limit' => 1,
-                'sort'  => 'id',
-                'order' => 'desc',
-            ]);
+        $engine = $this->searchEngineManager->engine($this->searchContext);
 
-            return $this->find(current($indices['ids']));
+        $productId = $engine->findBySlug($slug);
+
+        if ($productId) {
+            return $this->find($productId);
         }
 
         return $this->findByAttributeCode('url_key', $slug);
@@ -202,12 +224,14 @@ class ProductRepository extends Repository
     /**
      * Get all products.
      *
-     * @return \Illuminate\Support\Collection
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
     public function getAll(array $params = [])
     {
-        if ($this->searchEngine == 'elastic') {
-            return $this->searchFromElastic($params);
+        $driver = $this->searchEngineManager->resolveDriver($this->searchContext);
+
+        if ($driver !== SearchEngineEnum::DATABASE) {
+            return $this->searchFromExternalEngine($params);
         }
 
         return $this->searchFromDatabase($params);
@@ -216,7 +240,7 @@ class ProductRepository extends Repository
     /**
      * Search product from database.
      *
-     * @return \Illuminate\Support\Collection
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
     public function searchFromDatabase(array $params = [])
     {
@@ -242,7 +266,7 @@ class ProductRepository extends Repository
         ])->scopeQuery(function ($query) use ($params) {
             $prefix = DB::getTablePrefix();
 
-            $qb = $query->distinct()
+            $qb = $query
                 ->select('products.*')
                 ->leftJoin('products as variants', DB::raw('COALESCE('.$prefix.'variants.parent_id, '.$prefix.'variants.id)'), '=', 'products.id')
                 ->leftJoin('product_price_indices', function ($join) {
@@ -252,162 +276,23 @@ class ProductRepository extends Repository
                         ->where('product_price_indices.customer_group_id', $customerGroup->id);
                 });
 
-            if (! empty($params['category_id'])) {
-                $qb->leftJoin('product_categories', 'product_categories.product_id', '=', 'products.id')
-                    ->whereIn('product_categories.category_id', explode(',', $params['category_id']));
-            }
+            $this->applyCategoryFilter($qb, $params);
 
-            if (! empty($params['channel_id'])) {
-                $qb->leftJoin('product_channels', 'products.id', '=', 'product_channels.product_id')
-                    ->where('product_channels.channel_id', explode(',', $params['channel_id']));
-            }
+            $this->applyChannelFilter($qb, $params);
 
-            if (! empty($params['type'])) {
-                $qb->where('products.type', $params['type']);
-            }
+            $this->applyTypeFilter($qb, $params);
 
-            /**
-             * Filter query by price.
-             */
-            if (! empty($params['price'])) {
-                $priceRange = explode(',', $params['price']);
+            $this->applyPriceFilter($qb, $params);
 
-                $qb->whereBetween('product_price_indices.min_price', [
-                    core()->convertToBasePrice(current($priceRange)),
-                    core()->convertToBasePrice(end($priceRange)),
-                ]);
-            }
-
-            /**
-             * Retrieve all the filterable attributes.
-             */
             $filterableAttributes = $this->attributeRepository->getProductDefaultAttributes(array_keys($params));
 
-            /**
-             * Filter the required attributes.
-             */
-            $attributes = $filterableAttributes->whereIn('code', [
-                'name',
-                'status',
-                'visible_individually',
-                'url_key',
-            ]);
+            $this->applyPriceAttributeFilters($qb, $params, $filterableAttributes);
 
-            /**
-             * Filter collection by required attributes.
-             */
-            foreach ($attributes as $attribute) {
-                $alias = $attribute->code.'_product_attribute_values';
+            $this->applyCoreAttributeFilters($qb, $params, $filterableAttributes);
 
-                $qb->leftJoin('product_attribute_values as '.$alias, 'products.id', '=', $alias.'.product_id')
-                    ->where($alias.'.attribute_id', $attribute->id);
+            $this->applyCustomAttributeFilters($qb, $params, $filterableAttributes, $prefix);
 
-                if ($attribute->code == 'name') {
-                    $synonyms = $this->searchSynonymRepository->getSynonymsByQuery(urldecode($params['name']));
-
-                    $qb->where(function ($subQuery) use ($alias, $synonyms) {
-                        foreach ($synonyms as $synonym) {
-                            $subQuery->orWhere($alias.'.text_value', 'like', '%'.$synonym.'%');
-                        }
-                    });
-                } elseif ($attribute->code == 'url_key') {
-                    if (empty($params['url_key'])) {
-                        $qb->whereNotNull($alias.'.text_value');
-                    } else {
-                        $qb->where($alias.'.text_value', 'like', '%'.urldecode($params['url_key']).'%');
-                    }
-                } else {
-                    if (is_null($params[$attribute->code])) {
-                        continue;
-                    }
-
-                    $qb->where($alias.'.'.$attribute->column_name, 1);
-                }
-            }
-
-            /**
-             * Filter the filterable attributes.
-             */
-            $attributes = $filterableAttributes->whereNotIn('code', [
-                'price',
-                'name',
-                'status',
-                'visible_individually',
-                'url_key',
-            ]);
-
-            /**
-             * Filter query by attributes.
-             */
-            if ($attributes->isNotEmpty()) {
-                $qb->where(function ($filterQuery) use ($qb, $params, $attributes) {
-                    $aliases = [
-                        'products' => 'product_attribute_values',
-                        'variants' => 'variant_attribute_values',
-                    ];
-
-                    foreach ($aliases as $table => $tableAlias) {
-                        $filterQuery->orWhere(function ($subFilterQuery) use ($qb, $params, $attributes, $table, $tableAlias) {
-                            foreach ($attributes as $attribute) {
-                                $alias = $attribute->code.'_'.$tableAlias;
-
-                                $qb->leftJoin('product_attribute_values as '.$alias, function ($join) use ($table, $alias, $attribute) {
-                                    $join->on($table.'.id', '=', $alias.'.product_id');
-
-                                    $join->where($alias.'.attribute_id', $attribute->id);
-                                });
-
-                                $subFilterQuery->whereIn($alias.'.'.$attribute->column_name, explode(',', $params[$attribute->code]));
-                            }
-                        });
-                    }
-                });
-
-                $qb->groupBy('products.id');
-            }
-
-            /**
-             * Sort collection.
-             */
-            $sortOptions = $this->getSortOptions($params);
-
-            if ($sortOptions['order'] != 'rand') {
-                $attribute = $this->attributeRepository->findOneByField('code', $sortOptions['sort']);
-
-                if ($attribute) {
-                    if ($attribute->code === 'price') {
-                        $qb->orderBy('product_price_indices.min_price', $sortOptions['order']);
-                    } else {
-                        $alias = 'sort_product_attribute_values';
-
-                        $qb->leftJoin('product_attribute_values as '.$alias, function ($join) use ($alias, $attribute) {
-                            $join->on('products.id', '=', $alias.'.product_id')
-                                ->where($alias.'.attribute_id', $attribute->id);
-
-                            if ($attribute->value_per_channel) {
-                                if ($attribute->value_per_locale) {
-                                    $join->where($alias.'.channel', core()->getRequestedChannelCode())
-                                        ->where($alias.'.locale', core()->getRequestedLocaleCode());
-                                } else {
-                                    $join->where($alias.'.channel', core()->getRequestedChannelCode());
-                                }
-                            } else {
-                                if ($attribute->value_per_locale) {
-                                    $join->where($alias.'.locale', core()->getRequestedLocaleCode());
-                                }
-                            }
-                        })
-                            ->orderBy($alias.'.'.$attribute->column_name, $sortOptions['order']);
-                    }
-                } else {
-                    /* `created_at` is not an attribute so it will be in else case */
-                    $qb->orderBy('products.created_at', $sortOptions['order']);
-                }
-            } else {
-                return $qb->inRandomOrder();
-            }
-
-            return $qb->groupBy('products.id');
+            return $this->applySorting($qb, $params, $prefix);
         });
 
         $limit = $this->getPerPageLimit($params);
@@ -416,11 +301,11 @@ class ProductRepository extends Repository
     }
 
     /**
-     * Search product from elastic search.
+     * Search products via external search engine (Elasticsearch, Algolia, etc).
      *
-     * @return \Illuminate\Support\Collection
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    public function searchFromElastic(array $params = [])
+    public function searchFromExternalEngine(array $params = [])
     {
         $currentPage = Paginator::resolveCurrentPage('page');
 
@@ -428,10 +313,12 @@ class ProductRepository extends Repository
 
         $sortOptions = $this->getSortOptions($params);
 
-        $indices = $this->elasticSearchRepository->search($params, [
-            'from'  => ($currentPage * $limit) - $limit,
+        $engine = $this->searchEngineManager->engine($this->searchContext);
+
+        $indices = $engine->search($params, [
+            'from' => ($currentPage * $limit) - $limit,
             'limit' => $limit,
-            'sort'  => $sortOptions['sort'],
+            'sort' => $sortOptions['sort'],
             'order' => $sortOptions['order'],
         ]);
 
@@ -448,12 +335,23 @@ class ProductRepository extends Repository
             'variants.attribute_values',
             'variants.price_indices',
             'variants.inventory_indices',
-        ])->scopeQuery(function ($query) use ($indices) {
-            $qb = $query->distinct()
+        ])->scopeQuery(function ($query) use ($params, $indices) {
+            $qb = $query
+                ->select('products.*')
                 ->whereIn('products.id', $indices['ids']);
 
-            //Sort collection
-            $qb->orderBy(DB::raw('FIELD(id, '.implode(',', $indices['ids']).')'));
+            if (
+                ! empty($params['type'])
+                && $params['type'] === 'simple'
+                && ! empty($params['exclude_customizable_products'])
+            ) {
+                $qb->leftJoin('product_customizable_options', 'products.id', '=', 'product_customizable_options.product_id')
+                    ->whereNull('product_customizable_options.id');
+            }
+
+            $table = DB::getTablePrefix().$query->getModel()->getTable();
+
+            $qb->orderByRaw(db_grammar()->orderByField($table.'.id', $indices['ids']));
 
             return $qb;
         });
@@ -461,7 +359,7 @@ class ProductRepository extends Repository
         $items = $indices['total'] ? $query->get() : [];
 
         $results = new LengthAwarePaginator($items, $indices['total'], $limit, $currentPage, [
-            'path'  => request()->url(),
+            'path' => request()->url(),
             'query' => $params,
         ]);
 
@@ -487,8 +385,8 @@ class ProductRepository extends Repository
     /**
      * Returns product's super attribute with options.
      *
-     * @param  \Webkul\Product\Contracts\Product  $product
-     * @return \Illuminate\Support\Collection
+     * @param  Product  $product
+     * @return array
      */
     public function getSuperAttributes($product)
     {
@@ -499,9 +397,9 @@ class ProductRepository extends Repository
 
             foreach ($attribute->options as $option) {
                 $superAttributes[$key]['options'][] = [
-                    'id'           => $option->id,
-                    'admin_name'   => $option->admin_name,
-                    'sort_order'   => $option->sort_order,
+                    'id' => $option->id,
+                    'admin_name' => $option->admin_name,
+                    'sort_order' => $option->sort_order,
                     'swatch_value' => $option->swatch_value,
                 ];
             }
@@ -511,24 +409,269 @@ class ProductRepository extends Repository
     }
 
     /**
+     * Get the ids of the configurable, bundle and grouped products whose prices are built from the given products.
+     */
+    public function getCompositeParentIds(array $productIds): array
+    {
+        if (empty($productIds)) {
+            return [];
+        }
+
+        $configurableIds = $this->findWhereIn('id', $productIds, ['parent_id'])
+            ->pluck('parent_id')
+            ->filter();
+
+        $bundleAndGroupedIds = $this->scopeQuery(function ($query) use ($productIds) {
+            return $query
+                ->whereHas('bundle_options.bundle_option_products', function ($optionProducts) use ($productIds) {
+                    $optionProducts->whereIn($optionProducts->qualifyColumn('product_id'), $productIds);
+                })
+                ->orWhereHas('grouped_products', function ($groupedProducts) use ($productIds) {
+                    $groupedProducts->whereIn($groupedProducts->qualifyColumn('associated_product_id'), $productIds);
+                });
+        })->all(['id'])->pluck('id');
+
+        return $configurableIds
+            ->merge($bundleAndGroupedIds)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
      * Return category product maximum price.
      *
-     * @param  int  $categoryId
+     * @param  array  $params
      * @return float
      */
     public function getMaxPrice($params = [])
     {
-        $customerGroup = $this->customerRepository->getCurrentGroup();
+        return $this->searchEngineManager
+            ->engine($this->searchContext)
+            ->getMaxPrice($params);
+    }
 
-        $query = $this->model
-            ->leftJoin('product_price_indices', 'products.id', 'product_price_indices.product_id')
-            ->leftJoin('product_categories', 'products.id', 'product_categories.product_id')
-            ->where('product_price_indices.customer_group_id', $customerGroup->id);
-
+    /**
+     * Narrow the search to the given comma separated category ids.
+     */
+    protected function applyCategoryFilter($qb, array $params): void
+    {
         if (! empty($params['category_id'])) {
-            $query->where('product_categories.category_id', $params['category_id']);
+            $qb->leftJoin('product_categories', 'product_categories.product_id', '=', 'products.id')
+                ->whereIn('product_categories.category_id', explode(',', $params['category_id']));
+        }
+    }
+
+    /**
+     * Narrow the search to the given comma separated channel ids.
+     */
+    protected function applyChannelFilter($qb, array $params): void
+    {
+        if (! empty($params['channel_id'])) {
+            $qb->leftJoin('product_channels', 'products.id', '=', 'product_channels.product_id')
+                ->where('product_channels.channel_id', explode(',', $params['channel_id']));
+        }
+    }
+
+    /**
+     * Narrow the search to one product type, excluding customizable simples when asked.
+     */
+    protected function applyTypeFilter($qb, array $params): void
+    {
+        if (! empty($params['type'])) {
+            $qb->where('products.type', $params['type']);
+
+            if (
+                $params['type'] === 'simple'
+                && ! empty($params['exclude_customizable_products'])
+            ) {
+                $qb->leftJoin('product_customizable_options', 'products.id', '=', 'product_customizable_options.product_id')
+                    ->whereNull('product_customizable_options.id');
+            }
+        }
+    }
+
+    /**
+     * Narrow the search to the indexed price range, converted to the base currency.
+     */
+    protected function applyPriceFilter($qb, array $params): void
+    {
+        if (! empty($params['price'])) {
+            $priceRange = explode(',', $params['price']);
+
+            $qb->whereBetween('product_price_indices.min_price', [
+                core()->convertToBasePrice(current($priceRange)),
+                core()->convertToBasePrice(end($priceRange)),
+            ]);
+        }
+    }
+
+    /**
+     * Narrow the search by every price typed attribute other than price itself.
+     */
+    protected function applyPriceAttributeFilters($qb, array $params, $filterableAttributes): void
+    {
+        foreach ($filterableAttributes as $priceAttribute) {
+            if (
+                $priceAttribute->type !== AttributeTypeEnum::PRICE->value
+                || $priceAttribute->code === 'price'
+                || empty($params[$priceAttribute->code])
+            ) {
+                continue;
+            }
+
+            $range = explode(',', $params[$priceAttribute->code]);
+            $alias = $priceAttribute->code.'_price_range_values';
+
+            $qb->leftJoin('product_attribute_values as '.$alias, function ($join) use ($alias, $priceAttribute) {
+                $join->on('products.id', '=', $alias.'.product_id')
+                    ->where($alias.'.attribute_id', $priceAttribute->id);
+            })->whereBetween($alias.'.float_value', [
+                core()->convertToBasePrice(current($range)),
+                core()->convertToBasePrice(end($range)),
+            ]);
+        }
+    }
+
+    /**
+     * Narrow the search by name, status, visibility and url key, expanding search synonyms for the name.
+     */
+    protected function applyCoreAttributeFilters($qb, array $params, $filterableAttributes): void
+    {
+        $attributes = $filterableAttributes->whereIn('code', [
+            'name',
+            'status',
+            'visible_individually',
+            'url_key',
+        ]);
+
+        foreach ($attributes as $attribute) {
+            $alias = $attribute->code.'_product_attribute_values';
+
+            $qb->leftJoin('product_attribute_values as '.$alias, 'products.id', '=', $alias.'.product_id')
+                ->where($alias.'.attribute_id', $attribute->id);
+
+            if ($attribute->code == 'name') {
+                $synonyms = $this->searchSynonymRepository->getSynonymsByQuery(urldecode($params['name']));
+
+                $qb->where(function ($subQuery) use ($alias, $synonyms) {
+                    foreach ($synonyms as $synonym) {
+                        $subQuery->orWhere($alias.'.text_value', db_grammar()->caseInsensitiveLike(), '%'.$synonym.'%');
+                    }
+                });
+            } elseif ($attribute->code == 'url_key') {
+                if (empty($params['url_key'])) {
+                    $qb->whereNotNull($alias.'.text_value');
+                } else {
+                    $qb->where($alias.'.text_value', db_grammar()->caseInsensitiveLike(), '%'.urldecode($params['url_key']).'%');
+                }
+            } else {
+                if (is_null($params[$attribute->code])) {
+                    continue;
+                }
+
+                $qb->where($alias.'.'.$attribute->column_name, 1);
+            }
+        }
+    }
+
+    /**
+     * Narrow the search by the remaining filterable attributes, matching a product or any of its variants.
+     */
+    protected function applyCustomAttributeFilters($qb, array $params, $filterableAttributes, string $prefix): void
+    {
+        $attributes = $filterableAttributes->whereNotIn('code', [
+            'name',
+            'status',
+            'visible_individually',
+            'url_key',
+        ])->filter(function ($attribute) {
+            return $attribute->type !== AttributeTypeEnum::PRICE->value;
+        });
+
+        if ($attributes->isNotEmpty()) {
+            $qb->where(function ($filterQuery) use ($qb, $params, $attributes, $prefix) {
+                $aliases = [
+                    'products' => 'product_attribute_values',
+                    'variants' => 'variant_attribute_values',
+                ];
+
+                foreach ($aliases as $table => $tableAlias) {
+                    $filterQuery->orWhere(function ($subFilterQuery) use ($qb, $params, $attributes, $prefix, $table, $tableAlias) {
+                        foreach ($attributes as $attribute) {
+                            $alias = $attribute->code.'_'.$tableAlias;
+
+                            $qb->leftJoin('product_attribute_values as '.$alias, function ($join) use ($table, $alias, $attribute) {
+                                $join->on($table.'.id', '=', $alias.'.product_id');
+
+                                $join->where($alias.'.attribute_id', $attribute->id);
+                            });
+
+                            if (in_array($attribute->type, [
+                                AttributeTypeEnum::CHECKBOX->value,
+                                AttributeTypeEnum::MULTISELECT->value,
+                            ])) {
+                                $paramValues = explode(',', $params[$attribute->code]);
+
+                                $subFilterQuery->where(function ($query) use ($paramValues, $alias, $attribute, $prefix) {
+                                    foreach ($paramValues as $value) {
+                                        $query->orWhereRaw(db_grammar()->findInSet('?', "{$prefix}{$alias}.{$attribute->column_name}"), [$value]);
+                                    }
+                                });
+                            } else {
+                                $subFilterQuery->whereIn($alias.'.'.$attribute->column_name, explode(',', $params[$attribute->code]));
+                            }
+                        }
+                    });
+                }
+            });
+
+            $qb->groupBy('products.id');
+        }
+    }
+
+    /**
+     * Order the search, returning the builder because a random order replaces the grouping.
+     */
+    protected function applySorting($qb, array $params, string $prefix)
+    {
+        $sortOptions = $this->getSortOptions($params);
+
+        if ($sortOptions['order'] != 'rand') {
+            $attribute = $this->attributeRepository->findOneByField('code', $sortOptions['sort']);
+
+            if ($attribute) {
+                if ($attribute->code === 'price') {
+                    $qb->orderByRaw('MIN('.$prefix.'product_price_indices.min_price) '.$sortOptions['order']);
+                } else {
+                    $alias = 'sort_product_attribute_values';
+
+                    $qb->leftJoin('product_attribute_values as '.$alias, function ($join) use ($alias, $attribute) {
+                        $join->on('products.id', '=', $alias.'.product_id')
+                            ->where($alias.'.attribute_id', $attribute->id);
+
+                        if ($attribute->value_per_channel) {
+                            if ($attribute->value_per_locale) {
+                                $join->where($alias.'.channel', core()->getRequestedChannelCode())
+                                    ->where($alias.'.locale', core()->getRequestedLocaleCode());
+                            } else {
+                                $join->where($alias.'.channel', core()->getRequestedChannelCode());
+                            }
+                        } else {
+                            if ($attribute->value_per_locale) {
+                                $join->where($alias.'.locale', core()->getRequestedLocaleCode());
+                            }
+                        }
+                    })
+                        ->orderByRaw('MIN('.$prefix.$alias.'.'.$attribute->column_name.') '.$sortOptions['order']);
+                }
+            } else {
+                $qb->orderBy('products.created_at', $sortOptions['order']);
+            }
+        } else {
+            return $qb->inRandomOrder();
         }
 
-        return $query->max('min_price') ?? 0;
+        return $qb->groupBy('products.id');
     }
 }

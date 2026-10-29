@@ -39,7 +39,7 @@
             </div>
         </div>
 
-        <!-- Full Pannel -->
+        <!-- Full Panel -->
         <div class="mt-3.5 flex gap-2.5 max-xl:flex-wrap">
     
             <!-- Left Section -->
@@ -48,7 +48,7 @@
                 {!! view_render_event('bagisto.admin.settings.inventory_sources.edit.card.general.before', ['inventorySource' => $inventorySource]) !!}
 
                 <!-- General -->
-                <div class="box-shadow rounded bg-white p-4 dark:bg-gray-900">
+                <div class="box-shadow rounded-sm bg-white p-4 dark:bg-gray-900">
                     <p class="mb-4 text-base font-semibold text-gray-800 dark:text-white">
                         @lang('admin::app.settings.inventory-sources.edit.general')
                     </p>
@@ -116,7 +116,7 @@
                 {!! view_render_event('bagisto.admin.settings.inventory_sources.edit.card.contact_info.before', ['inventorySource' => $inventorySource]) !!}
 
                 <!-- Contact Information -->
-                <div class="box-shadow rounded bg-white p-4 dark:bg-gray-900">
+                <div class="box-shadow rounded-sm bg-white p-4 dark:bg-gray-900">
                     <p class="mb-4 text-base font-semibold text-gray-800 dark:text-white">
                         @lang('admin::app.settings.inventory-sources.edit.contact-info')
                     </p>
@@ -179,7 +179,7 @@
                     </x-admin::form.control-group>
 
                     <!-- Contact Fax -->
-                    <x-admin::form.control-group class="!mb-0">
+                    <x-admin::form.control-group class="mb-0!">
                         <x-admin::form.control-group.label>
                             @lang('admin::app.settings.inventory-sources.edit.contact-fax')
                         </x-admin::form.control-group.label>
@@ -209,7 +209,7 @@
             </div>
 
             <!-- Right Section -->
-            <div class="flex w-[360px] max-w-full flex-col gap-2">
+            <div class="flex w-90 max-w-full flex-col gap-2">
 
                 {!! view_render_event('bagisto.admin.settings.inventory_sources.edit.card.accordion.settings.before', ['inventorySource' => $inventorySource]) !!}
 
@@ -224,7 +224,7 @@
                     </x-slot>
                 
                     <x-slot:content>
-                        <!-- Latitute -->
+                        <!-- Latitude -->
                         <x-admin::form.control-group>
                             <x-admin::form.control-group.label>
                                 @lang('admin::app.settings.inventory-sources.edit.latitude')
@@ -280,7 +280,7 @@
                         </x-admin::form.control-group>
 
                         <!-- Status -->
-                        <x-admin::form.control-group class="!mb-0">
+                        <x-admin::form.control-group class="mb-0!">
                             <x-admin::form.control-group.label>
                                 @lang('admin::app.settings.inventory-sources.edit.status')
                             </x-admin::form.control-group.label>
@@ -324,7 +324,7 @@
             id="v-source-address-template"
         >
             <!-- Source Address -->
-            <div class="box-shadow rounded bg-white p-4 dark:bg-gray-900">
+            <div class="box-shadow rounded-sm bg-white p-4 dark:bg-gray-900">
                 <p class="mb-4 text-base font-semibold text-gray-800 dark:text-white">
                     @lang('admin::app.settings.inventory-sources.edit.source-address')
                 </p>
@@ -434,7 +434,7 @@
                 </x-admin::form.control-group>
 
                 <!-- Post Code -->
-                <x-admin::form.control-group class="!mb-0">
+                <x-admin::form.control-group class="mb-0!">
                     <x-admin::form.control-group.label class="required">
                         @lang('admin::app.settings.inventory-sources.edit.postcode')
                     </x-admin::form.control-group.label>
@@ -443,7 +443,7 @@
                         type="text"
                         id="postcode"
                         name="postcode"
-                        rules="required"
+                        rules="required|postcode"
                         :value="old('postcode') ?? $inventorySource->postcode"
                         :label="trans('admin::app.settings.inventory-sources.edit.postcode')"
                         :placeholder="trans('admin::app.settings.inventory-sources.edit.postcode')"

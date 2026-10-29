@@ -5,7 +5,7 @@ namespace Webkul\Core\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Webkul\Core\Contracts\Address as AddressContract;
-use Webkul\Customer\Models\Customer;
+use Webkul\Customer\Models\CustomerProxy;
 
 abstract class Address extends Model implements AddressContract
 {
@@ -34,7 +34,7 @@ abstract class Address extends Model implements AddressContract
      */
     protected $casts = [
         'use_for_shipping' => 'boolean',
-        'default_address'  => 'boolean',
+        'default_address' => 'boolean',
     ];
 
     /**
@@ -50,6 +50,6 @@ abstract class Address extends Model implements AddressContract
      */
     public function customer(): BelongsTo
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(CustomerProxy::modelClass());
     }
 }

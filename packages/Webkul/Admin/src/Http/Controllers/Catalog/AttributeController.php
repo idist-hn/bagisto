@@ -3,16 +3,42 @@
 namespace Webkul\Admin\Http\Controllers\Catalog;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Validation\NestedRules;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 use Webkul\Admin\DataGrids\Catalog\AttributeDataGrid;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Admin\Http\Requests\MassDestroyRequest;
+use Webkul\Attribute\Enums\AttributeTypeEnum;
+use Webkul\Attribute\Enums\SwatchTypeEnum;
+use Webkul\Attribute\Enums\ValidationEnum;
 use Webkul\Attribute\Repositories\AttributeRepository;
+use Webkul\Core\Helpers\MediaFileName;
 use Webkul\Core\Rules\Code;
+use Webkul\Core\Rules\Regex;
 use Webkul\Product\Repositories\ProductRepository;
 
 class AttributeController extends Controller
 {
+    /**
+     * Boolean fields on the attribute form that must default to false when
+     * absent from the request (e.g., when a checkbox is unchecked).
+     */
+    const BOOLEAN_FIELDS = [
+        'is_required',
+        'is_unique',
+        'is_filterable',
+        'is_configurable',
+        'is_visible_on_front',
+        'is_comparable',
+        'value_per_locale',
+        'value_per_channel',
+        'enable_wysiwyg',
+    ];
+
     /**
      * Create a new controller instance.
      *
@@ -26,7 +52,7 @@ class AttributeController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function index()
     {
@@ -40,32 +66,51 @@ class AttributeController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function create()
     {
         $locales = core()->getAllLocales();
 
-        return view('admin::catalog.attributes.create', compact('locales'));
+        $attributeTypes = AttributeTypeEnum::getValues();
+
+        $swatchTypes = SwatchTypeEnum::getValues();
+
+        $validations = ValidationEnum::getValues();
+
+        return view('admin::catalog.attributes.create', compact('locales', 'attributeTypes', 'swatchTypes', 'validations'));
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store()
     {
-        $this->validate(request(), [
-            'code'          => ['required', 'not_in:type,attribute_family_id', 'unique:attributes,code', new Code],
-            'admin_name'    => 'required',
-            'type'          => 'required',
-            'default_value' => 'integer',
-        ]);
+        $rules = [
+            'code' => ['required', 'not_in:type,attribute_family_id', 'unique:attributes,code', new Code],
+            'admin_name' => 'required',
+            'type' => 'required',
+            'options.*.swatch_value' => $this->swatchValueRules(),
+            'options.*.swatch_alt' => ['nullable', 'string', 'max:255'],
+            'options.*.swatch_file_name' => ['nullable', 'string', 'max:'.MediaFileName::MAX_LENGTH],
+            'regex' => ['nullable', 'required_if:validation,regex', new Regex],
+        ];
+
+        if (request('type') === 'boolean') {
+            $rules['default_value'] = 'in:0,1';
+        }
+
+        $this->validate(request(), $rules);
 
         $requestData = request()->all();
 
         $requestData['default_value'] ??= null;
+
+        foreach (self::BOOLEAN_FIELDS as $field) {
+            $requestData[$field] = request()->boolean($field);
+        }
 
         Event::dispatch('catalog.attribute.create.before');
 
@@ -81,7 +126,7 @@ class AttributeController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function edit(int $id)
     {
@@ -89,39 +134,67 @@ class AttributeController extends Controller
 
         $locales = core()->getAllLocales();
 
-        return view('admin::catalog.attributes.edit', compact('attribute', 'locales'));
+        $attributeTypes = AttributeTypeEnum::getValues();
+
+        $swatchTypes = SwatchTypeEnum::getValues();
+
+        $validations = ValidationEnum::getValues();
+
+        return view('admin::catalog.attributes.edit', compact('attribute', 'locales', 'attributeTypes', 'swatchTypes', 'validations'));
     }
 
     /**
-     * Get attribute options associated with attribute.
-     *
-     * @return \Illuminate\View\View
+     * Get the options of an attribute, each image swatch linked to its stored file.
      */
-    public function getAttributeOptions(int $id)
+    public function getAttributeOptions(int $id): JsonResponse
     {
         $attribute = $this->attributeRepository->findOrFail($id);
 
-        return $attribute->options()->orderBy('sort_order')->get();
+        return new JsonResponse($attribute->options()->orderBy('sort_order')->get());
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(int $id)
     {
-        $this->validate(request(), [
-            'code'          => ['required', 'unique:attributes,code,'.$id, new Code],
-            'admin_name'    => 'required',
-            'type'          => 'required',
-            'default_value' => 'integer',
-        ]);
+        $rules = [
+            'code' => ['required', 'unique:attributes,code,'.$id, new Code],
+            'admin_name' => 'required',
+            'type' => 'required',
+            'options.*.swatch_value' => $this->swatchValueRules(),
+            'options.*.swatch_alt' => ['nullable', 'string', 'max:255'],
+            'options.*.swatch_file_name' => ['nullable', 'string', 'max:'.MediaFileName::MAX_LENGTH],
+            'regex' => ['nullable', 'required_if:validation,regex', new Regex],
+        ];
+
+        if (request('type') === 'boolean') {
+            $rules['default_value'] = 'in:0,1';
+        }
+
+        $this->validate(request(), $rules);
 
         $requestData = request()->all();
 
-        if (! $requestData['default_value']) {
-            $requestData['default_value'] = null;
+        $requestData['default_value'] ??= null;
+
+        foreach (self::BOOLEAN_FIELDS as $field) {
+            if (
+                in_array($field, [
+                    'is_unique',
+                    'value_per_locale',
+                    'value_per_channel',
+                ])
+                && ! request()->has($field)
+            ) {
+                unset($requestData[$field]);
+
+                continue;
+            }
+
+            $requestData[$field] = request()->boolean($field);
         }
 
         Event::dispatch('catalog.attribute.update.before', $id);
@@ -183,23 +256,29 @@ class AttributeController extends Controller
             }
         }
 
-        foreach ($indices as $index) {
-            Event::dispatch('catalog.attribute.delete.before', $index);
+        try {
+            foreach ($indices as $index) {
+                Event::dispatch('catalog.attribute.delete.before', $index);
 
-            $this->attributeRepository->delete($index);
+                $this->attributeRepository->delete($index);
 
-            Event::dispatch('catalog.attribute.delete.after', $index);
+                Event::dispatch('catalog.attribute.delete.after', $index);
+            }
+
+            return new JsonResponse([
+                'message' => trans('admin::app.catalog.attributes.index.datagrid.mass-delete-success'),
+            ]);
+        } catch (\Exception $exception) {
+            return new JsonResponse([
+                'message' => trans('admin::app.catalog.attributes.delete-failed'),
+            ], 500);
         }
-
-        return new JsonResponse([
-            'message' => trans('admin::app.catalog.attributes.index.datagrid.mass-delete-success'),
-        ]);
     }
 
     /**
      * Get super attributes of product.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function productSuperAttributes(int $id)
     {
@@ -208,7 +287,18 @@ class AttributeController extends Controller
         $superAttributes = $this->productRepository->getSuperAttributes($product);
 
         return response()->json([
-            'data'  => $superAttributes,
+            'data' => $superAttributes,
         ]);
+    }
+
+    /**
+     * Get the rules of an option's swatch value, which must be an image when it is an upload.
+     */
+    protected function swatchValueRules(): NestedRules
+    {
+        return Rule::forEach(fn ($value) => $value instanceof UploadedFile
+            ? ['image', 'mimes:bmp,jpeg,jpg,png,webp']
+            : ['nullable']
+        );
     }
 }

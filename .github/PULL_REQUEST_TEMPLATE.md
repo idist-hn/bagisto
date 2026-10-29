@@ -13,10 +13,7 @@
 
 ## Branch Selection
 <!--- Please specify the target branch for this pull request. -->
-- [ ] Target Branch: master 
-
-## Pint
-<!---  Please make sure all the pint tests are passed. -->
+- [ ] Target Branch: the release line the change affects (`2.4`, `2.5`) for bug fixes and minor changes, `master` for major features and breaking changes
 
 ## Tailwind Reordering
 <!--- Please make sure all the Tailwind classes are reordered. -->

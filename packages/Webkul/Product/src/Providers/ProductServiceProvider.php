@@ -2,50 +2,61 @@
 
 namespace Webkul\Product\Providers;
 
-use Illuminate\Foundation\AliasLoader;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\ServiceProvider;
 use Webkul\Product\Console\Commands\Indexer;
-use Webkul\Product\Facades\ProductImage as ProductImageFacade;
-use Webkul\Product\Facades\ProductVideo as ProductVideoFacade;
+use Webkul\Product\Console\Commands\PruneSearchImages;
 use Webkul\Product\Models\ProductProxy;
 use Webkul\Product\Observers\ProductObserver;
-use Webkul\Product\ProductImage;
-use Webkul\Product\ProductVideo;
+use Webkul\Product\Services\Search\Connections\ElasticConnection;
+use Webkul\Product\Services\Search\Engines\DatabaseEngine;
+use Webkul\Product\Services\Search\Engines\ElasticSearchEngine;
+use Webkul\Product\Services\Search\Indexers\ElasticSearchIndexer;
+use Webkul\Product\Services\Search\SearchEngineConfigurator;
+use Webkul\Product\Services\Search\SearchEngineManager;
 
 class ProductServiceProvider extends ServiceProvider
 {
-    /**
-     * Bootstrap services.
-     */
-    public function boot(): void
-    {
-        include __DIR__.'/../Http/helpers.php';
-
-        $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
-
-        $this->loadTranslationsFrom(__DIR__.'/../Resources/lang', 'product');
-
-        $this->app->register(EventServiceProvider::class);
-
-        ProductProxy::observe(ProductObserver::class);
-    }
-
     /**
      * Register services.
      */
     public function register(): void
     {
+        include __DIR__.'/../Http/helpers.php';
+
         $this->registerConfig();
 
         $this->registerCommands();
 
-        $this->registerFacades();
+        $this->registerSearchBindings();
+    }
+
+    /**
+     * Bootstrap services.
+     */
+    public function boot(): void
+    {
+        $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
+
+        $this->loadTranslationsFrom(__DIR__.'/../Resources/lang', 'product');
+
+        app(SearchEngineConfigurator::class)->configure();
+
+        ProductProxy::observe(ProductObserver::class);
+
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
+            $schedule->command('indexer:index --type=price')->dailyAt('00:01');
+
+            $schedule->command('search-images:prune')->dailyAt('00:05');
+        });
+
+        $this->app->register(EventServiceProvider::class);
     }
 
     /**
      * Register configuration.
      */
-    public function registerConfig(): void
+    protected function registerConfig(): void
     {
         $this->mergeConfigFrom(dirname(__DIR__).'/Config/product_types.php', 'product_types');
     }
@@ -56,33 +67,23 @@ class ProductServiceProvider extends ServiceProvider
     protected function registerCommands(): void
     {
         if ($this->app->runningInConsole()) {
-            $this->commands([Indexer::class]);
+            $this->commands([Indexer::class, PruneSearchImages::class]);
         }
     }
 
     /**
-     * Register Bouncer as a singleton.
+     * Register search engine bindings.
      */
-    protected function registerFacades(): void
+    protected function registerSearchBindings(): void
     {
-        /**
-         * Product image.
-         */
-        $loader = AliasLoader::getInstance();
+        $this->app->singleton(SearchEngineManager::class);
 
-        $loader->alias('product_image', ProductImageFacade::class);
+        $this->app->singleton('product.search.connection.elastic', ElasticConnection::class);
 
-        $this->app->singleton('product_image', function () {
-            return app()->make(ProductImage::class);
-        });
+        $this->app->singleton('product.search.engine.database', DatabaseEngine::class);
 
-        /**
-         * Product video.
-         */
-        $loader->alias('product_video', ProductVideoFacade::class);
+        $this->app->singleton('product.search.engine.elastic', ElasticSearchEngine::class);
 
-        $this->app->singleton('product_video', function () {
-            return app()->make(ProductVideo::class);
-        });
+        $this->app->singleton('product.search.indexer.elastic', ElasticSearchIndexer::class);
     }
 }

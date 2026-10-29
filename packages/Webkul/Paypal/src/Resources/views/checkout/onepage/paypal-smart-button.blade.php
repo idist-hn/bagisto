@@ -41,7 +41,7 @@
                 methods: {
                     register() {
                         if (typeof paypal == 'undefined') {
-                            this.$emitter.emit('add-flash', { type: 'error', message: '@lang('Something went wrong.')' });
+                            this.$emitter.emit('add-flash', { type: 'error', message: '@lang('paypal::app.errors.invalid-configs')' });
 
                             return;
                         }
@@ -65,14 +65,14 @@
                             },
 
                             createOrder: (data, actions) => {
-                                return this.$axios.get("{{ route('paypal.smart-button.create-order') }}")
+                                return this.$axios.get("{{ route('paypal.smart_button.create_order') }}")
                                     .then(response => response.data.result)
                                     .then(order => order.id)
                                     .catch(error => {
                                         if (error.response.data.error === 'invalid_client') {
                                             options.authorizationFailed = true;
 
-                                            options.alertBox('@lang('Something went wrong.')');
+                                            options.alertBox('@lang('paypal::app.errors.invalid-configs')');
                                         }
 
                                         return error;
@@ -80,25 +80,25 @@
                             },
 
                             onApprove: (data, actions) => {
-                                this.$axios.post("{{ route('paypal.smart-button.capture-order') }}", {
+                                return this.$axios.post("{{ route('paypal.smart_button.capture_order') }}", {
                                     _token: "{{ csrf_token() }}",
                                     orderData: data
                                 })
-                                .then(response => {
-                                    if (response.data.success) {
-                                        if (response.data.redirect_url) {
-                                            window.location.href = response.data.redirect_url;
-                                        } else {
-                                            window.location.href = "{{ route('shop.checkout.onepage.success') }}";
+                                    .then(response => {
+                                        if (response.data.success) {
+                                            if (response.data.redirect_url) {
+                                                window.location.href = response.data.redirect_url;
+                                            } else {
+                                                window.location.href = "{{ route('shop.checkout.onepage.success') }}";
+                                            }
                                         }
-                                    }
-                                })
-                                .catch(error => window.location.href = "{{ route('shop.checkout.cart.index') }}");
+                                    })
+                                    .catch(error => window.location.href = "{{ route('shop.checkout.cart.index') }}");
                             },
 
                             onError: (error) => {
                                 if (! options.authorizationFailed) {
-                                    options.alertBox('@lang('Something went wrong.')');
+                                    options.alertBox('@lang('paypal::app.errors.something-went-wrong')');
                                 }
                             },
                         };

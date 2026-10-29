@@ -16,7 +16,7 @@
 
         <!-- Shipping Collected Section -->
         <template v-else>
-            <div class="box-shadow relative flex-1 rounded bg-white p-4 dark:bg-gray-900">
+            <div class="box-shadow relative flex-1 rounded-sm bg-white p-4 dark:bg-gray-900">
                 <!-- Header -->
                 <div class="mb-4 flex items-center justify-between">
                     <p class="text-base font-semibold text-gray-600 dark:text-white">
@@ -41,7 +41,7 @@
                         <div class="flex items-center gap-0.5">
                             <span
                                 class="text-base text-emerald-500"
-                                :class="[report.statistics.shipping_collected.progress < 0 ? 'icon-down-stat text-red-500 dark:!text-red-500' : 'icon-up-stat text-emerald-500 dark:!text-emerald-500']"
+                                :class="[report.statistics.shipping_collected.progress < 0 ? 'icon-down-stat text-red-500 dark:text-red-500!' : 'icon-up-stat text-emerald-500 dark:text-emerald-500!']"
                             ></span>
 
                             <p
@@ -179,15 +179,15 @@
             },
 
             methods: {
-                getStats(filtets) {
+                getStats(filters) {
                     this.isLoading = true;
 
-                    var filtets = Object.assign({}, filtets);
+                    var filters = Object.assign({}, filters);
 
-                    filtets.type = 'shipping-collected';
+                    filters.type = 'shipping-collected';
 
                     this.$axios.get("{{ route('admin.reporting.sales.stats') }}", {
-                            params: filtets
+                            params: filters
                         })
                         .then(response => {
                             this.report = response.data;

@@ -4,7 +4,7 @@
 
 {!! view_render_event('bagisto.shop.categories.view.toolbar.after') !!}
 
-@inject('toolbar' , 'Webkul\Product\Helpers\Toolbar')
+@inject('toolbar' , \Webkul\Product\Helpers\Toolbar::class)
 
 @pushOnce('scripts')
     <script
@@ -17,13 +17,13 @@
                 {!! view_render_event('bagisto.shop.categories.toolbar.filter.before') !!}
 
                 <!-- Product Sorting Filters -->
-                <x-shop::dropdown 
-                    class="z-[1]" 
+                <x-shop::dropdown
+                    class="z-1"
                     position="bottom-left"
                 >
                     <x-slot:toggle>
                         <!-- Dropdown Toggler -->
-                        <button class="flex w-full max-w-[200px] cursor-pointer items-center justify-between gap-4 rounded-lg border border-zinc-200 bg-white p-3.5 text-base transition-all hover:border-gray-400 focus:border-gray-400 max-md:w-[110px] max-md:border-0 max-md:pl-2.5 max-md:pr-2.5">
+                        <button class="flex w-full max-w-50 cursor-pointer items-center justify-between gap-4 rounded-lg border border-zinc-200 bg-white p-3.5 text-base transition-all hover:border-gray-400 focus:border-gray-400 max-md:w-27.5 max-md:border-0 max-md:pl-2.5 max-md:pr-2.5">
                             @{{ sortLabel ?? "@lang('shop::app.products.sort-by.title')" }}
 
                             <span
@@ -32,7 +32,7 @@
                             ></span>
                         </button>
                     </x-slot>
-                
+
                     <!-- Dropdown Content -->
                     <x-slot:menu>
                         <x-shop::dropdown.menu.item
@@ -55,7 +55,7 @@
                     <x-shop::dropdown position="bottom-right">
                         <x-slot:toggle>
                             <!-- Dropdown Toggler -->
-                            <button class="flex w-full max-w-[200px] cursor-pointer items-center justify-between gap-4 rounded-lg border border-zinc-200 bg-white p-3.5 text-base transition-all hover:border-gray-400 focus:border-gray-400 max-md:w-[110px] max-md:border-0 max-md:pl-2.5 max-md:pr-2.5">
+                            <button class="flex w-full max-w-50 cursor-pointer items-center justify-between gap-4 rounded-lg border border-zinc-200 bg-white p-3.5 text-base transition-all hover:border-gray-400 focus:border-gray-400 max-md:w-27.5 max-md:border-0 max-md:pl-2.5 max-md:pr-2.5">
                                 @{{ filters.applied.limit ?? "@lang('shop::app.categories.toolbar.show')" }}
 
                                 <span
@@ -64,7 +64,7 @@
                                 ></span>
                             </button>
                         </x-slot>
-                    
+
                         <!-- Dropdown Content -->
                         <x-slot:menu>
                             <x-shop::dropdown.menu.item
@@ -95,7 +95,7 @@
                             aria-label="@lang('shop::app.categories.toolbar.grid')"
                             tabindex="0"
                             :class="(filters.applied.mode === 'grid') ? 'icon-grid-view-fill' : 'icon-grid-view'"
-                            @click="changeMode()"
+                            @click="changeMode('grid')"
                         >
                         </span>
                     </div>
@@ -104,7 +104,7 @@
                 {!! view_render_event('bagisto.shop.categories.toolbar.pagination.after') !!}
             </div>
 
-            <!-- Modile Toolbar -->
+            <!-- Mobile Toolbar -->
             <div class="md:hidden">
                 <ul>
                     <li
@@ -154,6 +154,16 @@
                 };
             },
 
+            created() {
+                let queryParams = new URLSearchParams(window.location.search);
+
+                queryParams.forEach((value, filter) => {
+                    if (this.isAvailable(filter, value)) {
+                        this.filters.applied[filter] = value;
+                    }
+                });
+            },
+
             mounted() {
                 this.setFilters();
             },
@@ -165,6 +175,18 @@
             },
 
             methods: {
+                isAvailable(filter, value) {
+                    if (! ['sort', 'limit', 'mode'].includes(filter)) {
+                        return false;
+                    }
+
+                    if (filter === 'sort') {
+                        return this.filters.available.sort.some((sort) => sort.value === value);
+                    }
+
+                    return this.filters.available[filter].some((available) => String(available) === value);
+                },
+
                 apply(type, value) {
                     this.filters.applied[type] = value;
 
@@ -186,7 +208,10 @@
                         }
                     }
 
-                    this.$emit('filter-applied', filters);
+                    this.$emit('filter-applied', {
+                        default: this.filters.default,
+                        applied: filters,
+                    });
                 }
             },
         });

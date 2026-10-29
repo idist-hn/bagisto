@@ -4,7 +4,10 @@ namespace Webkul\Product\Helpers\Indexers\Price;
 
 use Illuminate\Support\Carbon;
 use Webkul\CatalogRule\Repositories\CatalogRuleProductPriceRepository;
+use Webkul\Core\Contracts\Channel;
+use Webkul\Customer\Contracts\CustomerGroup;
 use Webkul\Customer\Repositories\CustomerRepository;
+use Webkul\Product\Contracts\Product;
 use Webkul\Product\Repositories\ProductCustomerGroupPriceRepository;
 
 abstract class AbstractType
@@ -12,21 +15,21 @@ abstract class AbstractType
     /**
      * Product instance.
      *
-     * @var \Webkul\Product\Contracts\Product
+     * @var Product
      */
     protected $product;
 
     /**
      * Channel instance.
      *
-     * @var \Webkul\Core\Contracts\Channel
+     * @var Channel
      */
     protected $channel;
 
     /**
      * Customer Group instance.
      *
-     * @var \Webkul\Customer\Contracts\CustomerGroup
+     * @var CustomerGroup
      */
     protected $customerGroup;
 
@@ -42,10 +45,10 @@ abstract class AbstractType
     ) {}
 
     /**
-     * Set current product
+     * Set the current product.
      *
-     * @param  \Webkul\Product\Contracts\Product  $product
-     * @return \Webkul\Product\Helpers\Indexers\Price\AbstractPriceIndex
+     * @param  Product  $product
+     * @return AbstractPriceIndex
      */
     public function setProduct($product)
     {
@@ -55,10 +58,10 @@ abstract class AbstractType
     }
 
     /**
-     * Set channel
+     * Set the current channel.
      *
-     * @param  \Webkul\Core\Contracts\Channel  $channel
-     * @return \Webkul\Product\Helpers\Indexers\Price\AbstractPriceIndex
+     * @param  Channel  $channel
+     * @return AbstractPriceIndex
      */
     public function setChannel($channel)
     {
@@ -68,10 +71,10 @@ abstract class AbstractType
     }
 
     /**
-     * Set customer group
+     * Set the current customer group.
      *
-     * @param  \Webkul\Customer\Contracts\CustomerGroup  $customerGroup
-     * @return \Webkul\Product\Helpers\Indexers\Price\AbstractPriceIndex
+     * @param  CustomerGroup  $customerGroup
+     * @return AbstractPriceIndex
      */
     public function setCustomerGroup($customerGroup)
     {
@@ -81,19 +84,19 @@ abstract class AbstractType
     }
 
     /**
-     * Returns product specific pricing for customer group
+     * Returns product specific pricing for the customer group.
      *
      * @return array
      */
     public function getIndices()
     {
         return [
-            'min_price'         => ($minPrice = $this->getMinimalPrice()) ?? 0,
+            'min_price' => ($minPrice = $this->getMinimalPrice()) ?? 0,
             'regular_min_price' => $this->product->price ?? 0,
-            'max_price'         => $minPrice ?? 0,
+            'max_price' => $minPrice ?? 0,
             'regular_max_price' => $this->product->price ?? 0,
-            'product_id'        => $this->product->id,
-            'channel_id'        => $this->channel->id,
+            'product_id' => $this->product->id,
+            'channel_id' => $this->channel->id,
             'customer_group_id' => $this->customerGroup->id,
         ];
     }
@@ -172,8 +175,6 @@ abstract class AbstractType
 
         $lastPrice = $this->product->price;
 
-        $lastCustomerGroupId = null;
-
         foreach ($customerGroupPrices as $customerGroupPrice) {
             if (
                 $customerGroupPrice->qty > $qty
@@ -190,8 +191,6 @@ abstract class AbstractType
                     $lastPrice = $this->product->price - ($this->product->price * $customerGroupPrice->value) / 100;
 
                     $lastQty = $customerGroupPrice->qty;
-
-                    $lastCustomerGroupId = $customerGroupPrice->customer_group_id;
                 }
             } else {
                 if (
@@ -201,8 +200,6 @@ abstract class AbstractType
                     $lastPrice = $customerGroupPrice->value;
 
                     $lastQty = $customerGroupPrice->qty;
-
-                    $lastCustomerGroupId = $customerGroupPrice->customer_group_id;
                 }
             }
         }

@@ -3,35 +3,52 @@
 namespace Webkul\Product\Helpers\Indexers;
 
 use Elastic\Elasticsearch\Exception\ClientResponseException;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
+use Webkul\Attribute\Contracts\Attribute;
+use Webkul\Attribute\Enums\AttributeTypeEnum;
 use Webkul\Attribute\Repositories\AttributeRepository;
+use Webkul\Category\Repositories\CategoryRepository;
+use Webkul\Core\Contracts\Channel;
+use Webkul\Core\Contracts\Locale;
 use Webkul\Core\Facades\ElasticSearch as ElasticSearchClient;
 use Webkul\Core\Repositories\ChannelRepository;
 use Webkul\Customer\Repositories\CustomerGroupRepository;
+use Webkul\Product\Contracts\Product;
+use Webkul\Product\Contracts\ProductAttributeValue;
 use Webkul\Product\Repositories\ProductRepository;
+use Webkul\Product\Services\Search\Engines\ElasticSearchEngine;
 
 class ElasticSearch extends AbstractIndexer
 {
     /**
+     * How long a scroll of an index stays open between batches.
+     */
+    protected const SCROLL_TIMEOUT = '1m';
+
+    /**
+     * Batch size.
+     *
      * @var int
      */
     private $batchSize;
 
     /**
-     * Attributes
+     * Attributes.
      *
      * @var array
      */
     protected $attributes;
 
     /**
-     * Channels
+     * Channels.
      *
      * @var array
      */
     protected $channels;
 
     /**
-     * Customer Groups
+     * Customer groups
      *
      * @var array
      */
@@ -40,23 +57,30 @@ class ElasticSearch extends AbstractIndexer
     /**
      * Product instance.
      *
-     * @var \Webkul\Product\Contracts\Product
+     * @var Product
      */
     protected $product;
 
     /**
      * Channel instance.
      *
-     * @var \Webkul\Core\Contracts\Channel
+     * @var Channel
      */
     protected $channel;
 
     /**
      * Locale instance.
      *
-     * @var \Webkul\Core\Contracts\Locale
+     * @var Locale
      */
     protected $locale;
+
+    /**
+     * Category chains, resolved once per locale for the run.
+     *
+     * @var array<string, array<int, string>>
+     */
+    protected $categoryPaths = [];
 
     /**
      * Create a new indexer instance.
@@ -68,15 +92,16 @@ class ElasticSearch extends AbstractIndexer
         protected CustomerGroupRepository $customerGroupRepository,
         protected AttributeRepository $attributeRepository,
         protected ProductRepository $productRepository,
+        protected CategoryRepository $categoryRepository,
     ) {
         $this->batchSize = self::BATCH_SIZE;
     }
 
     /**
-     * Set current product
+     * Set current product.
      *
-     * @param  \Webkul\Product\Contracts\Product  $product
-     * @return \Webkul\Product\Helpers\Indexers\ElasticSearch\Product
+     * @param  Product  $product
+     * @return self
      */
     public function setProduct($product)
     {
@@ -86,10 +111,10 @@ class ElasticSearch extends AbstractIndexer
     }
 
     /**
-     * Set Channel
+     * Set Channel.
      *
-     * @param  \Webkul\Product\Contracts\Product  $product
-     * @return \Webkul\Product\Helpers\Indexers\ElasticSearch\Product
+     * @param  Channel  $channel
+     * @return self
      */
     public function setChannel($channel)
     {
@@ -99,10 +124,10 @@ class ElasticSearch extends AbstractIndexer
     }
 
     /**
-     * Set Locale
+     * Set Locale.
      *
-     * @param  \Webkul\Product\Contracts\Product  $product
-     * @return \Webkul\Product\Helpers\Indexers\ElasticSearch\Product
+     * @param  Locale  $locale
+     * @return self
      */
     public function setLocale($locale)
     {
@@ -112,47 +137,39 @@ class ElasticSearch extends AbstractIndexer
     }
 
     /**
-     * Reindex every products
+     * Reindex every products.
      *
      * @return void
      */
     public function reindexFull()
     {
-        while (true) {
-            $paginator = $this->productRepository
-                ->select('products.*')
-                ->with([
-                    'channels',
-                    'categories',
-                    'inventories',
-                    'super_attributes',
-                    'variants',
-                    'variants.channels',
-                    'attribute_family',
-                    'attribute_values',
-                    'variants.attribute_family',
-                    'variants.attribute_values',
-                    'price_indices',
-                    'variants.price_indices',
-                    'inventory_indices',
-                    'variants.inventory_indices',
-                ])
-                ->cursorPaginate($this->batchSize);
+        $this->productRepository
+            ->select('products.*')
+            ->with([
+                'channels',
+                'categories',
+                'inventories',
+                'super_attributes',
+                'variants',
+                'variants.channels',
+                'attribute_family',
+                'attribute_values',
+                'variants.attribute_family',
+                'variants.attribute_values',
+                'price_indices',
+                'variants.price_indices',
+                'inventory_indices',
+                'variants.inventory_indices',
+            ])
+            ->chunkById($this->batchSize, function ($products) {
+                $this->reindexBatch($products->all());
+            }, 'products.id', 'id');
 
-            $this->reindexBatch($paginator->items());
-
-            if (! $cursor = $paginator->nextCursor()) {
-                break;
-            }
-
-            request()->query->add(['cursor' => $cursor->encode()]);
-        }
-
-        request()->query->remove('cursor');
+        $this->purgeOrphanedIndices();
     }
 
     /**
-     * Reindex products by batch size
+     * Reindex products by batch size.
      *
      * @return void
      */
@@ -177,7 +194,7 @@ class ElasticSearch extends AbstractIndexer
                         $refreshIndices['body'][] = [
                             'index' => [
                                 '_index' => $indexName,
-                                '_id'    => $product->id,
+                                '_id' => $product->id,
                             ],
                         ];
 
@@ -190,7 +207,7 @@ class ElasticSearch extends AbstractIndexer
         }
 
         if (! empty($refreshIndices['body'])) {
-            ElasticsearchClient::bulk($refreshIndices);
+            ElasticSearchClient::bulk($refreshIndices);
         }
 
         if (! empty($removeIndices)) {
@@ -199,7 +216,7 @@ class ElasticSearch extends AbstractIndexer
     }
 
     /**
-     * Delete product indices
+     * Delete product indices.
      *
      * @param  array  $indices
      * @return void
@@ -210,11 +227,11 @@ class ElasticSearch extends AbstractIndexer
             foreach ($productIds as $id) {
                 $params = [
                     'index' => $indexName,
-                    'id'    => $id,
+                    'id' => $id,
                 ];
 
                 try {
-                    ElasticsearchClient::delete($params);
+                    ElasticSearchClient::delete($params);
                 } catch (ClientResponseException $e) {
                 }
             }
@@ -222,29 +239,56 @@ class ElasticSearch extends AbstractIndexer
     }
 
     /**
-     * Refresh product indices
+     * Drop documents whose product is no longer in the catalog.
+     *
+     * A document is otherwise only dropped when the product it describes fires its delete event,
+     * so an index outlives a catalog that was wiped and re-seeded. The admin grid pages on the
+     * count Elasticsearch reports while reading its rows out of `product_flat`, so a document
+     * with no product behind it inflates the total and leaves a blank row in its place.
      *
      * @return void
      */
-    public function getIndexName()
+    public function purgeOrphanedIndices()
     {
-        return 'products_'.$this->channel->code.'_'.$this->locale->code.'_index';
+        foreach ($this->getChannels() as $channel) {
+            $this->setChannel($channel);
+
+            foreach ($channel->locales as $locale) {
+                $this->setLocale($locale);
+
+                $this->purgeOrphanedIndex($this->getIndexName());
+            }
+        }
     }
 
     /**
-     * Returns filterable attribute values
+     * Refresh product indices.
+     *
+     * @return string
+     */
+    public function getIndexName()
+    {
+        return ElasticSearchEngine::formatIndexName($this->channel->code, $this->locale->code);
+    }
+
+    /**
+     * Get indices for the product.
      *
      * @return void
      */
     public function getIndices()
     {
         $properties = array_merge([
-            'id'                  => $this->product->id,
-            'type'                => $this->product->type,
-            'sku'                 => $this->product->sku,
+            'id' => $this->product->id,
+            'type' => $this->product->type,
+            'sku' => $this->product->sku,
             'attribute_family_id' => $this->product->attribute_family_id,
-            'category_ids'        => $this->product->categories->pluck('id')->toArray(),
-            'created_at'          => $this->product->created_at,
+            'category_ids' => $this->product->categories->pluck('id')->toArray(),
+            'category_name' => $this->getCategoryNames(),
+            'created_at' => $this->product->created_at,
+            'quantity' => $this->product->inventories->isEmpty()
+                ? null
+                : (int) $this->product->inventories->sum('qty'),
         ], $this->product->additional ?? []);
 
         $attributes = $this->getAttributes();
@@ -252,7 +296,7 @@ class ElasticSearch extends AbstractIndexer
         foreach ($attributes as $attribute) {
             $attributeValue = $this->getAttributeValue($attribute);
 
-            if ($attribute->code == 'price') {
+            if ($attribute->code == AttributeTypeEnum::PRICE->value) {
                 $properties[$attribute->code] = (float) $attributeValue?->{$attribute->column_name};
 
                 foreach ($this->getCustomerGroups() as $customerGroup) {
@@ -273,8 +317,15 @@ class ElasticSearch extends AbstractIndexer
 
                     $properties[$attribute->code.'_'.$customerGroup->id] = (float) $groupPrice;
                 }
-            } elseif ($attribute->type == 'boolean') {
-                $properties[$attribute->code] = intval($attributeValue?->{$attribute->column_name});
+            } elseif ($attribute->type == AttributeTypeEnum::BOOLEAN->value) {
+                $properties[$attribute->code] = intval($attributeValue?->{$attribute->column_name} ?? $attribute->default_value);
+            } elseif (in_array($attribute->type, [
+                AttributeTypeEnum::CHECKBOX->value,
+                AttributeTypeEnum::MULTISELECT->value,
+            ])) {
+                $rawValue = $attributeValue?->{$attribute->column_name};
+
+                $properties[$attribute->code] = $rawValue ? array_map('trim', explode(',', $rawValue)) : [];
             } else {
                 $properties[$attribute->code] = strip_tags($attributeValue?->{$attribute->column_name});
             }
@@ -290,9 +341,27 @@ class ElasticSearch extends AbstractIndexer
     }
 
     /**
-     * Returns attributes to index
+     * The categories the product sits in, each read as the chain of ancestors leading down to it,
+     * so the index answers a search for a category by the same name the admin listing shows.
      *
-     * @return void
+     * @return string[]
+     */
+    public function getCategoryNames()
+    {
+        $locale = $this->locale->code;
+
+        $this->categoryPaths[$locale] ??= $this->categoryRepository->getCategoryPaths($locale);
+
+        return array_values(array_intersect_key(
+            $this->categoryPaths[$locale],
+            array_flip($this->product->categories->pluck('id')->toArray())
+        ));
+    }
+
+    /**
+     * Returns attributes to index.
+     *
+     * @return Collection
      */
     public function getAttributes()
     {
@@ -300,30 +369,33 @@ class ElasticSearch extends AbstractIndexer
             return $this->attributes;
         }
 
-        $this->attributes = $this->attributeRepository->scopeQuery(function ($query) {
-            return $query->where(function ($qb) {
-                return $qb->orWhereIn('code', [
-                    'name',
-                    'status',
-                    'visible_individually',
-                    'new',
-                    'featured',
-                    'url_key',
-                    'short_description',
-                    'description',
-                ])
-                    ->orWhere('is_filterable', 1);
-            });
-        })->get();
+        $this->attributes = $this->attributeRepository
+            ->scopeQuery(function ($query) {
+                return $query->where(function ($qb) {
+                    return $qb
+                        ->orWhereIn('code', [
+                            'name',
+                            'status',
+                            'visible_individually',
+                            'new',
+                            'featured',
+                            'url_key',
+                            'short_description',
+                            'description',
+                        ])
+                        ->orWhere('is_filterable', 1);
+                });
+            })
+            ->get();
 
         return $this->attributes;
     }
 
     /**
-     * Returns filterable attribute values
+     * Returns filterable attribute values.
      *
-     * @param  \Webkul\Attribute\Contracts\Attribute  $attribute
-     * @param  \Webkul\Product\Contracts\ProductAttributeValue
+     * @param  Attribute  $attribute
+     * @param  ProductAttributeValue
      * @return void
      */
     public function getAttributeValue($attribute)
@@ -351,7 +423,7 @@ class ElasticSearch extends AbstractIndexer
     }
 
     /**
-     * Returns all channels
+     * Returns all channels.
      *
      * @return Collection
      */
@@ -365,7 +437,7 @@ class ElasticSearch extends AbstractIndexer
     }
 
     /**
-     * Returns all customer groups
+     * Returns all customer groups.
      *
      * @return Collection
      */
@@ -376,5 +448,53 @@ class ElasticSearch extends AbstractIndexer
         }
 
         return $this->customerGroups = $this->customerGroupRepository->all();
+    }
+
+    /**
+     * Drop the documents of one index whose product is no longer in the catalog.
+     *
+     * Walked with a scroll and checked in batches, so an index far larger than the catalog costs
+     * no more memory than one batch of ids.
+     *
+     * @param  string  $indexName
+     * @return void
+     */
+    protected function purgeOrphanedIndex($indexName)
+    {
+        try {
+            $response = ElasticSearchClient::search([
+                'index' => $indexName,
+                'scroll' => self::SCROLL_TIMEOUT,
+                'body' => [
+                    'size' => $this->batchSize,
+                    'stored_fields' => [],
+                    'query' => [
+                        'match_all' => new \stdClass,
+                    ],
+                ],
+            ]);
+        } catch (ClientResponseException $e) {
+            return;
+        }
+
+        while (! empty($response['hits']['hits'])) {
+            $indexedIds = array_map('intval', array_column($response['hits']['hits'], '_id'));
+
+            $orphanedIds = array_diff(
+                $indexedIds,
+                DB::table('products')->whereIn('id', $indexedIds)->pluck('id')->all()
+            );
+
+            if (! empty($orphanedIds)) {
+                $this->deleteIndices([$indexName => $orphanedIds]);
+            }
+
+            $response = ElasticSearchClient::scroll([
+                'scroll_id' => $response['_scroll_id'],
+                'scroll' => self::SCROLL_TIMEOUT,
+            ]);
+        }
+
+        ElasticSearchClient::clearScroll(['scroll_id' => $response['_scroll_id']]);
     }
 }

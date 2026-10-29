@@ -3,7 +3,8 @@
 namespace Webkul\Core\Console\Commands;
 
 use Illuminate\Console\Command;
-use Webkul\Sales\Models\Invoice;
+use Webkul\Sales\Contracts\Invoice;
+use Webkul\Sales\Models\InvoiceProxy;
 
 class InvoiceOverdueCron extends Command
 {
@@ -19,7 +20,7 @@ class InvoiceOverdueCron extends Command
      *
      * @var string
      */
-    protected $description = 'Invoice reminders';
+    protected $description = 'Invoice overdue reminders';
 
     /**
      * Create a new command instance.
@@ -38,8 +39,7 @@ class InvoiceOverdueCron extends Command
      */
     public function handle()
     {
-        // Get 'overdue' invoices
-        Invoice::inOverdueAndRemindersLimit()
+        InvoiceProxy::inOverdueAndRemindersLimit()
             ->get()
             ->each(function (Invoice $invoice) {
                 $invoice->sendInvoiceReminder();

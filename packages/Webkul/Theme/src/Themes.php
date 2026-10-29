@@ -4,20 +4,19 @@ namespace Webkul\Theme;
 
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Vite;
-use Illuminate\Support\Str;
 use Webkul\Theme\Exceptions\ViterNotFound;
 
 class Themes
 {
     /**
-     * Contains current activated theme code.
+     * The theme the current request renders with.
      *
-     * @var string
+     * @var Theme|null
      */
     protected $activeTheme = null;
 
     /**
-     * Contains all themes.
+     * The themes of the panel the request is for.
      *
      * @var array
      */
@@ -31,32 +30,19 @@ class Themes
     protected $laravelViewsPath;
 
     /**
-     * Contains default theme code.
-     *
-     * @var string
-     */
-    protected $defaultThemeCode = 'default';
-
-    /**
      * Create a new themes instance.
      *
      * @return void
      */
     public function __construct()
     {
-        if (! Str::contains(request()->url(), config('app.admin_url').'/')) {
-            $this->defaultThemeCode = Config::get('themes.admin-default', null);
-        } else {
-            $this->defaultThemeCode = Config::get('themes.shop-default', null);
-        }
-
         $this->laravelViewsPath = Config::get('view.paths');
 
         $this->loadThemes();
     }
 
     /**
-     * Return list of all registered themes.
+     * Return the themes of the panel the request is for.
      *
      * @return array
      */
@@ -66,7 +52,7 @@ class Themes
     }
 
     /**
-     * Return list of registered themes.
+     * Return the storefront themes a channel can run, whichever panel the request is for.
      *
      * @return array
      */
@@ -82,19 +68,16 @@ class Themes
                 $data['name'] ?? '',
                 $data['assets_path'] ?? '',
                 $data['views_path'] ?? '',
-                isset($data['vite']) ? $data['vite'] : [],
+                $data['views_namespace'] ?? null,
+                $data['vite'] ?? [],
             );
-
-            if (! empty($data['parent'])) {
-                $parentThemes[$code] = $data['parent'];
-            }
         }
 
         return $channelThemes;
     }
 
     /**
-     * Check if specified exists.
+     * Check whether a theme with the given code is among those of the panel the request is for.
      *
      * @return bool
      */
@@ -110,7 +93,7 @@ class Themes
     }
 
     /**
-     * Prepare all themes.
+     * Prepare all themes, the admin ones for an admin request and the storefront ones for any other.
      *
      * @return void
      */
@@ -118,7 +101,7 @@ class Themes
     {
         $parentThemes = [];
 
-        if (Str::contains(request()->url(), config('app.admin_url').'/')) {
+        if ($this->isAdminRequest()) {
             $themes = config('themes.admin', []);
         } else {
             $themes = config('themes.shop', []);
@@ -130,6 +113,7 @@ class Themes
                 $data['name'] ?? '',
                 $data['assets_path'] ?? '',
                 $data['views_path'] ?? '',
+                $data['views_namespace'] ?? null,
                 $data['vite'] ?? [],
             );
 
@@ -154,7 +138,7 @@ class Themes
     /**
      * Enable theme.
      *
-     * @return \Webkul\Theme\Theme
+     * @return Theme
      */
     public function set(string $themeName)
     {
@@ -186,7 +170,7 @@ class Themes
     /**
      * Get current theme.
      *
-     * @return \Webkul\Theme\Theme
+     * @return Theme|null
      */
     public function current()
     {
@@ -204,9 +188,9 @@ class Themes
     }
 
     /**
-     * Find a theme by it's name.
+     * Find a theme of the panel the request is for by its code.
      *
-     * @return \Webkul\Theme\Theme
+     * @return Theme
      */
     public function find(string $themeName)
     {
@@ -220,7 +204,7 @@ class Themes
     }
 
     /**
-     * Original view paths defined in `config.view.php`.
+     * Return the view paths configured when this registry was created, which set() puts after a theme's own.
      *
      * @return array
      */
@@ -230,7 +214,8 @@ class Themes
     }
 
     /**
-     * Return the asset URL of the current theme if a theme is found; otherwise, check from the namespace.
+     * Return an asset url from the current theme, initialising one when none is set yet, or, given a
+     * namespace, from the vite registered for it under `bagisto-vite.viters`.
      *
      * @return string
      */
@@ -238,18 +223,18 @@ class Themes
     {
         $url = trim($filename, '/');
 
-        /**
-         * If the namespace is null, it means the theming system is activated. We use the request URI to
-         * detect the theme and provide Vite assets based on the current theme.
-         */
         if (empty($namespace)) {
-            return $this->current()->url($url);
+            $currentTheme = $this->current();
+
+            if (! $currentTheme) {
+                $this->ensureThemeInitialized();
+
+                $currentTheme = $this->current();
+            }
+
+            return $currentTheme->url($url);
         }
 
-        /**
-         * If a namespace is provided, it means the developer knows what they are doing and must create the
-         * registry in the provided configuration. We will analyze based on that.
-         */
         $viters = config('bagisto-vite.viters');
 
         if (empty($viters[$namespace])) {
@@ -264,25 +249,26 @@ class Themes
     }
 
     /**
-     * Set bagisto vite in current theme.
+     * Set bagisto vite from the current theme, initialising one when none is set yet, or, given a
+     * namespace, from the vite registered for it under `bagisto-vite.viters`.
      *
      * @param  mixed  $entryPoints
      * @return mixed
      */
     public function setBagistoVite($entryPoints, ?string $namespace = null)
     {
-        /**
-         * If the namespace is null, it means the theming system is activated. We use the request URI to
-         * detect the theme and provide Vite assets based on the current theme.
-         */
         if (empty($namespace)) {
-            return $this->current()->setBagistoVite($entryPoints);
+            $currentTheme = $this->current();
+
+            if (! $currentTheme) {
+                $this->ensureThemeInitialized();
+
+                $currentTheme = $this->current();
+            }
+
+            return $currentTheme->setBagistoVite($entryPoints);
         }
 
-        /**
-         * If a namespace is provided, it means the developer knows what they are doing and must create the
-         * registry in the provided configuration. We will analyze based on that.
-         */
         $viters = config('bagisto-vite.viters');
 
         if (empty($viters[$namespace])) {
@@ -292,5 +278,40 @@ class Themes
         return Vite::useHotFile($viters[$namespace]['hot_file'])
             ->useBuildDirectory($viters[$namespace]['build_directory'])
             ->withEntryPoints($entryPoints);
+    }
+
+    /**
+     * Reload the themes for the current request and set the first one when none is active, as under
+     * Octane, where a worker can reach a view before any theme is set.
+     *
+     * @return void
+     */
+    protected function ensureThemeInitialized()
+    {
+        if (! $this->activeTheme) {
+            $this->loadThemes();
+
+            if (
+                ! $this->activeTheme
+                && ! empty($this->themes)
+            ) {
+                $defaultTheme = $this->themes[0];
+
+                $this->set($defaultTheme->code);
+            }
+        }
+    }
+
+    /**
+     * Whether the current request is for the admin panel, taking one whose context cannot be read, as can
+     * happen under Octane, for the storefront.
+     */
+    protected function isAdminRequest(): bool
+    {
+        try {
+            return is_admin_request();
+        } catch (\Exception) {
+            return false;
+        }
     }
 }

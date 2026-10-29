@@ -36,7 +36,7 @@
             </div>
         </div>
     
-        <!-- Full Pannel -->
+        <!-- Full Panel -->
         <div class="mt-3.5 flex gap-2.5 max-xl:flex-wrap">
             <!-- Left Section -->
             <div class="flex flex-1 flex-col gap-2 max-xl:flex-auto">
@@ -44,7 +44,7 @@
                 {!! view_render_event('bagisto.admin.settings.inventory_sources.create.card.general.before') !!}
 
                 <!-- General -->
-                <div class="box-shadow rounded bg-white p-4 dark:bg-gray-900">
+                <div class="box-shadow rounded-sm bg-white p-4 dark:bg-gray-900">
                     <p class="mb-4 text-base font-semibold text-gray-800 dark:text-white">
                         @lang('admin::app.settings.inventory-sources.create.general')
                     </p>
@@ -88,14 +88,14 @@
                     </x-admin::form.control-group>
 
                     <!-- Description -->
-                    <x-admin::form.control-group class="!mb-0">
+                    <x-admin::form.control-group class="mb-0!">
                         <x-admin::form.control-group.label>
                             @lang('admin::app.settings.inventory-sources.create.description')
                         </x-admin::form.control-group.label>
 
                         <x-admin::form.control-group.control
                             type="textarea"
-                            class="!mb-0 text-gray-600 dark:text-gray-300"
+                            class="mb-0! text-gray-600 dark:text-gray-300"
                             id="description"
                             name="description"
                             :value="old('description')"
@@ -112,7 +112,7 @@
                 {!! view_render_event('bagisto.admin.settings.inventory_sources.create.card.contact_info.before') !!}
 
                 <!-- Contact Information -->
-                <div class="box-shadow rounded bg-white p-4 dark:bg-gray-900">
+                <div class="box-shadow rounded-sm bg-white p-4 dark:bg-gray-900">
                     <p class="mb-4 text-base font-semibold text-gray-800 dark:text-white">
                         @lang('admin::app.settings.inventory-sources.create.contact-info')
                     </p>
@@ -175,7 +175,7 @@
                     </x-admin::form.control-group>
 
                     <!-- Contact fax -->
-                    <x-admin::form.control-group class="!mb-0">
+                    <x-admin::form.control-group class="mb-0!">
                         <x-admin::form.control-group.label>
                             @lang('admin::app.settings.inventory-sources.create.contact-fax')
                         </x-admin::form.control-group.label>
@@ -205,7 +205,7 @@
             </div>
 
             <!-- Right Section -->
-            <div class="flex w-[360px] max-w-full flex-col gap-2">
+            <div class="flex w-90 max-w-full flex-col gap-2">
 
                 {!! view_render_event('bagisto.admin.settings.inventory_sources.create.card.accordion.settings.before') !!}
 
@@ -275,10 +275,16 @@
                         </x-admin::form.control-group>
 
                         <!-- Status -->
-                        <x-admin::form.control-group class="!mb-0">
+                        <x-admin::form.control-group class="mb-0!">
                             <x-admin::form.control-group.label>
                                 @lang('admin::app.settings.inventory-sources.create.status')
                             </x-admin::form.control-group.label>
+
+                            <x-admin::form.control-group.control
+                                type="hidden"
+                                name="status"
+                                value="0"
+                            />
 
                             <x-admin::form.control-group.control
                                 type="switch"
@@ -311,7 +317,7 @@
             id="v-source-address-template"
         >
             <!-- Source Address -->
-            <div class="box-shadow rounded bg-white p-4 dark:bg-gray-900">
+            <div class="box-shadow rounded-sm bg-white p-4 dark:bg-gray-900">
                 <p class="mb-4 text-base font-semibold text-gray-800 dark:text-white">
                     @lang('admin::app.settings.inventory-sources.create.address')
                 </p>
@@ -429,7 +435,7 @@
                 </x-admin::form.control-group>
 
                 <!-- postcode -->
-                <x-admin::form.control-group class="!mb-0">
+                <x-admin::form.control-group class="mb-0!">
                     <x-admin::form.control-group.label class="required">
                         @lang('admin::app.settings.inventory-sources.create.postcode')
                     </x-admin::form.control-group.label>
@@ -438,7 +444,7 @@
                         type="text"
                         id="postcode"
                         name="postcode"
-                        rules="required"
+                        rules="required|postcode"
                         :value="old('postcode')"
                         :label="trans('admin::app.settings.inventory-sources.create.postcode')"
                         :placeholder="trans('admin::app.settings.inventory-sources.create.postcode')"

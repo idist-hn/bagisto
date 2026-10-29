@@ -1,4 +1,9 @@
-@props(['isMultiRow' => false])
+@props([
+    'isMultiRow' => false,
+    'shimmerColumns' => 6,
+    'shimmerMultiRow' => null,
+    'shimmerMassAction' => null,
+])
 
 <v-datagrid {{ $attributes }}>
     {{ $slot }}
@@ -14,7 +19,12 @@
             <x-admin::datagrid.toolbar />
 
             <div class="mt-4 flex">
-                <x-admin::datagrid.table :isMultiRow="$isMultiRow">
+                <x-admin::datagrid.table
+                    :isMultiRow="$isMultiRow"
+                    :shimmerColumns="$shimmerColumns"
+                    :shimmerMultiRow="$shimmerMultiRow"
+                    :shimmerMassAction="$shimmerMassAction"
+                >
                     <template #header="{
                         isLoading,
                         available,
@@ -256,6 +266,17 @@
                 },
 
                 /**
+                 * Put the grid into, or out of, its loading state, so an action that reaches the
+                 * server reads as busy for as long as it is in flight.
+                 *
+                 * @param {boolean} state
+                 * @returns {void}
+                 */
+                setLoading(state) {
+                    this.isLoading = state;
+                },
+
+                /**
                  * Change Page. When the child component has handled all the cases, it will send the
                  * valid new page; otherwise, it will block. Here, we are certain that we have
                  * a new page, so the parent will simply call the AJAX based on the new page.
@@ -460,11 +481,11 @@
                 },
 
                 //=======================================================================================
-                // Support for previous applied values in datagrids. All code is based on local storage.
+                // Support for previous applied values in datagrid's. All code is based on local storage.
                 //=======================================================================================
 
                 /**
-                 * Updates the datagrids stored in local storage with the latest data.
+                 * Updates the datagrid's stored in local storage with the latest data.
                  *
                  * @returns {void}
                  */
@@ -480,7 +501,6 @@
                                     return {
                                         ...datagrid,
                                         requestCount: ++datagrid.requestCount,
-                                        available: this.available,
                                         applied: this.applied,
                                     };
                                 }
@@ -506,15 +526,14 @@
                     return {
                         src: this.src,
                         requestCount: 0,
-                        available: this.available,
                         applied: this.applied,
                     };
                 },
 
                 /**
-                 * Returns the storage key for datagrids in local storage.
+                 * Returns the storage key for datagrid's in local storage.
                  *
-                 * @returns {string} Storage key for datagrids.
+                 * @returns {string} Storage key for datagrid's.
                  */
                 getDatagridsStorageKey() {
                     return 'datagrids';
@@ -534,9 +553,9 @@
                 },
 
                 /**
-                 * Sets the datagrids in local storage.
+                 * Sets the datagrid's in local storage.
                  *
-                 * @param {Array} datagrids - Datagrids to be stored in local storage.
+                 * @param {Array} datagrids - Datagrid's to be stored in local storage.
                  * @returns {void}
                  */
                 setDatagrids(datagrids) {

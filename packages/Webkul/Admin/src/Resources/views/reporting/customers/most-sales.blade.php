@@ -16,7 +16,7 @@
 
         <!-- Customers with Most Sales Section -->
         <template v-else>
-            <div class="box-shadow relative flex-1 rounded bg-white p-4 dark:bg-gray-900">
+            <div class="box-shadow relative flex-1 rounded-sm bg-white p-4 dark:bg-gray-900">
                 <!-- Header -->
                 <div class="mb-4 flex items-center justify-between">
                     <p class="text-base font-semibold text-gray-600 dark:text-white">
@@ -100,15 +100,15 @@
             },
 
             methods: {
-                getStats(filtets) {
+                getStats(filters) {
                     this.isLoading = true;
 
-                    var filtets = Object.assign({}, filtets);
+                    var filters = Object.assign({}, filters);
 
-                    filtets.type = 'customers-with-most-sales';
+                    filters.type = 'customers-with-most-sales';
 
                     this.$axios.get("{{ route('admin.reporting.customers.stats') }}", {
-                            params: filtets
+                            params: filters
                         })
                         .then(response => {
                             this.report = response.data;

@@ -9,7 +9,7 @@
         type="text/x-template"
         id="v-group-products-template"
     >
-        <div class="box-shadow relative rounded bg-white dark:bg-gray-900">
+        <div class="box-shadow relative rounded-sm bg-white dark:bg-gray-900">
             <!-- Panel Header -->
             <div class="mb-2.5 flex justify-between gap-5 p-4">
                 <div class="flex flex-col gap-2">
@@ -21,7 +21,7 @@
                         @lang('admin::app.catalog.products.edit.types.grouped.info')
                     </p>
                 </div>
-                
+
                 <!-- Add Button -->
                 <div class="flex items-center gap-x-1">
                     <div
@@ -44,7 +44,7 @@
                     handle=".icon-drag"
                     v-bind="{animation: 200}"
                     :list="groupProducts"
-                    item-key="id"
+                    item-key="associated_product.id"
                 >
                     <template #item="{ element, index }">
                         <div class="flex justify-between gap-2.5 border-b border-slate-300 p-4 dark:border-gray-800">
@@ -52,15 +52,15 @@
                             <div class="flex gap-2.5">
                                 <!-- Drag Icon -->
                                 <i class="icon-drag cursor-grab text-xl text-gray-600 transition-all dark:text-gray-300"></i>
-                                
+
                                 <!-- Image -->
                                 <div
-                                    class="relative h-[60px] max-h-[60px] w-full max-w-[60px] overflow-hidden rounded"
+                                    class="relative h-15 max-h-15 w-full max-w-15 overflow-hidden rounded-sm"
                                     :class="{'overflow-hidden rounded border border-dashed border-gray-300 dark:border-gray-800 dark:mix-blend-exclusion dark:invert': ! element.associated_product.images.length}"
                                 >
                                     <template v-if="! element.associated_product.images.length">
                                         <img src="{{ bagisto_asset('images/product-placeholders/front.svg') }}">
-                                    
+
                                         <p class="absolute bottom-1.5 w-full text-center text-[6px] font-semibold text-gray-400">
                                             @lang('admin::app.catalog.products.edit.types.grouped.image-placeholder')
                                         </p>
@@ -89,38 +89,37 @@
                                     @{{ $admin.formatPrice(element.associated_product.price) }}
                                 </p>
 
-                                
                                 <!-- Hidden Input -->
                                 <input
                                     type="hidden"
-                                    :name="'links[' + (element.id ? element.id : 'link_' + index) + '][associated_product_id]'"
+                                    :name="'links[' + (element.id ? element.id : 'link_' + element.associated_product.id) + '][associated_product_id]'"
                                     :value="element.associated_product.id"
                                 />
-                                
+
                                 <input
                                     type="hidden"
-                                    :name="'links[' + (element.id ? element.id : 'link_' + index) + '][sort_order]'"
+                                    :name="'links[' + (element.id ? element.id : 'link_' + element.associated_product.id) + '][sort_order]'"
                                     :value="index"
                                 />
 
-                                <x-admin::form.control-group class="!mb-0">
-                                    <x-admin::form.control-group.label class="required !block">
+                                <x-admin::form.control-group class="mb-0!">
+                                    <x-admin::form.control-group.label class="required block!">
                                         @lang('admin::app.catalog.products.edit.types.grouped.default-qty')
                                     </x-admin::form.control-group.label>
 
                                     <v-field
                                         type="text"
-                                        :name="'links[' + (element.id ? element.id : 'link_' + index) + '][qty]'"
+                                        :name="'links[' + (element.id ? element.id : 'link_' + element.associated_product.id) + '][qty]'"
                                         v-model="element.qty"
-                                        class="min-h-[39px] w-[86px] rounded-md border px-3 py-2 text-sm text-gray-600 transition-all hover:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300"
-                                        :class="[errors['links[' + (element.id ? element.id : 'link_' + index) + '][qty]'] ? 'border border-red-600 hover:border-red-600' : '']"
+                                        class="min-h-9.75 w-21.5 rounded-md border px-3 py-2 text-sm text-gray-600 transition-all hover:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300"
+                                        :class="[errors['links[' + (element.id ? element.id : 'link_' + element.associated_product.id) + '][qty]'] ? 'border border-red-600 hover:border-red-600' : '']"
                                         rules="required|numeric|min_value:1"
                                         label="@lang('admin::app.catalog.products.edit.types.grouped.default-qty')"
                                     >
                                     </v-field>
 
                                     <v-error-message
-                                        :name="'links[' + (element.id ? element.id : 'link_' + index) + '][qty]'"
+                                        :name="'links[' + (element.id ? element.id : 'link_' + element.associated_product.id) + '][qty]'"
                                         v-slot="{ message }"
                                     >
                                         <p class="mt-1 text-xs italic text-red-600">
@@ -162,7 +161,7 @@
                         @lang('admin::app.catalog.products.edit.types.grouped.empty-info')
                     </p>
                 </div>
-                
+
                 <!-- Add Row Button -->
                 <div
                     class="secondary-button text-sm"
@@ -176,7 +175,7 @@
             <x-admin::products.search
                 ref="productSearch"
                 ::added-product-ids="addedProductIds"
-                ::query-params="{type: 'simple'}"
+                ::query-params="{type: 'simple', exclude_customizable_products: 1}"
                 @onProductAdded="addSelected($event)"
             />
         </div>
@@ -213,11 +212,10 @@
                 },
 
                 remove(product) {
+
                     this.$emitter.emit('open-confirm-modal', {
                         agree: () => {
-                            let index = this.groupProducts.indexOf(product)
-
-                            this.groupProducts.splice(index, 1);
+                            this.groupProducts = this.groupProducts.filter(item => item.associated_product.id !== product.associated_product.id);
                         }
                     });
                 },

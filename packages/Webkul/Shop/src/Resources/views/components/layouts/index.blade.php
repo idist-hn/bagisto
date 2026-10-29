@@ -39,6 +39,10 @@
             name="currency"
             content="{{ core()->getCurrentCurrency()->toJson() }}"
         >
+        <meta 
+            name="generator" 
+            content="Bagisto"
+        >
 
         @stack('meta')
 
@@ -51,30 +55,38 @@
         @bagistoVite(['src/Resources/assets/css/app.css', 'src/Resources/assets/js/app.js'])
 
         <link
-            rel="preload"
-            href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&display=swap"
-            as="style"
-        >
-        <link
-            rel="stylesheet"
-            href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&display=swap"
-        >
+            rel="preconnect"
+            href="https://fonts.googleapis.com"
+            crossorigin
+        />
 
         <link
-            rel="preload"
-            href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap"
-            as="style"
-        >
+            rel="preconnect"
+            href="https://fonts.gstatic.com"
+            crossorigin
+        />
+
+        <link
+            rel="preload" as="style"
+            href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap"
+        />
+
         <link
             rel="stylesheet"
-            href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap"
-        >
+            href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap"
+        />
 
         @stack('styles')
 
         <style>
             {!! core()->getConfigData('general.content.custom_scripts.custom_css') !!}
         </style>
+
+        @if(core()->getConfigData('general.content.speculation_rules.enabled'))
+            <script type="speculationrules">
+                @json(core()->getSpeculationRules(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+            </script>
+        @endif
 
         {!! view_render_event('bagisto.shop.layout.head.after') !!}
 
@@ -90,6 +102,7 @@
             Skip to main content
         </a>
 
+        <!-- Built With Bagisto -->
         <div id="app">
             <!-- Flash Message Blade Component -->
             <x-shop::flash-group />
@@ -100,6 +113,13 @@
             <!-- Page Header Blade Component -->
             @if ($hasHeader)
                 <x-shop::layouts.header />
+            @endif
+
+            @if(
+                core()->getConfigData('general.gdpr.settings.enabled')
+                && core()->getConfigData('general.gdpr.cookie.enabled')
+            )
+                <x-shop::layouts.cookie />
             @endif
 
             {!! view_render_event('bagisto.shop.layout.content.before') !!}
@@ -125,19 +145,30 @@
 
         {!! view_render_event('bagisto.shop.layout.body.after') !!}
 
+        <!-- WebMCP Tool Registration For AI Agents -->
+        <x-shop::layouts.webmcp />
+
         @stack('scripts')
 
         {!! view_render_event('bagisto.shop.layout.vue-app-mount.before') !!}
         <script>
             /**
-             * Load event, the purpose of using the event is to mount the application
-             * after all of our `Vue` components which is present in blade file have
-             * been registered in the app. No matter what `app.mount()` should be
-             * called in the last.
+             * Mount the application as soon as the DOM is ready instead of waiting
+             * for the `load` event. All `Vue` components are registered through
+             * deferred `type="module"` scripts, which always finish executing
+             * before `DOMContentLoaded` fires, so every component is available
+             * by the time `app.mount()` runs. Mounting on `DOMContentLoaded`
+             * avoids blocking the storefront behind every image/font download.
              */
-            window.addEventListener("load", function (event) {
+            function mountApp() {
                 app.mount("#app");
-            });
+            }
+
+            if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", mountApp);
+            } else {
+                mountApp();
+            }
         </script>
 
         {!! view_render_event('bagisto.shop.layout.vue-app-mount.after') !!}

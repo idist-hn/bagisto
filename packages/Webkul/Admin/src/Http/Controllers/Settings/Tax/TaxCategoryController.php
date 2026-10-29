@@ -3,7 +3,9 @@
 namespace Webkul\Admin\Http\Controllers\Settings\Tax;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Event;
+use Illuminate\View\View;
 use Webkul\Admin\DataGrids\Settings\TaxCategoryDataGrid;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Admin\Http\Resources\TaxCategoryResource;
@@ -25,7 +27,7 @@ class TaxCategoryController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function index()
     {
@@ -39,15 +41,15 @@ class TaxCategoryController extends Controller
     /**
      * Function to create the tax category.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(): JsonResponse
     {
         $this->validate(request(), [
-            'code'        => 'required|string|unique:tax_categories,code',
-            'name'        => 'required|string',
+            'code' => 'required|string|unique:tax_categories,code',
+            'name' => 'required|string',
             'description' => 'required|string',
-            'taxrates'    => 'array|required',
+            'taxrates' => 'array|required',
         ]);
 
         Event::dispatch('tax.category.create.before');
@@ -88,10 +90,10 @@ class TaxCategoryController extends Controller
         $id = request()->id;
 
         $this->validate(request(), [
-            'code'        => 'required|string|unique:tax_categories,code,'.$id,
-            'name'        => 'required|string',
+            'code' => 'required|string|unique:tax_categories,code,'.$id,
+            'name' => 'required|string',
             'description' => 'required|string',
-            'taxrates'    => 'array|required',
+            'taxrates' => 'array|required',
         ]);
 
         Event::dispatch('tax.category.update.before', $id);
@@ -120,9 +122,11 @@ class TaxCategoryController extends Controller
     public function destroy(int $id): JsonResponse
     {
         try {
+            $taxCategory = $this->taxCategoryRepository->findOrFail($id);
+
             Event::dispatch('tax.category.delete.before', $id);
 
-            $this->taxCategoryRepository->delete($id);
+            $taxCategory->delete();
 
             Event::dispatch('tax.category.delete.after', $id);
 
@@ -130,10 +134,9 @@ class TaxCategoryController extends Controller
                 'message' => trans('admin::app.settings.taxes.categories.index.delete-success'),
             ]);
         } catch (\Exception $e) {
+            return new JsonResponse([
+                'message' => trans('admin::app.settings.taxes.categories.index.delete-failed'),
+            ], 500);
         }
-
-        return new JsonResponse([
-            'message' => trans('admin::app.settings.taxes.categories.index.delete-failed'),
-        ], 500);
     }
 }

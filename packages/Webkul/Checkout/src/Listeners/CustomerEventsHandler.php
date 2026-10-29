@@ -2,7 +2,8 @@
 
 namespace Webkul\Checkout\Listeners;
 
-use Cart;
+use Illuminate\Events\Dispatcher;
+use Webkul\Checkout\Facades\Cart;
 
 class CustomerEventsHandler
 {
@@ -23,11 +24,11 @@ class CustomerEventsHandler
     /**
      * Register the listeners for the subscriber.
      *
-     * @param  \Illuminate\Events\Dispatcher  $events
+     * @param  Dispatcher  $events
      * @return void
      */
     public function subscribe($events)
     {
-        $events->listen('customer.after.login', 'Webkul\Checkout\Listeners\CustomerEventsHandler@onCustomerLogin');
+        $events->listen('customer.after.login', [self::class, 'onCustomerLogin']);
     }
 }

@@ -32,7 +32,7 @@
                     v-if="report.statistics.length"
                     v-for="customer in report.statistics"
                 >
-                    <a :href="customer.id ? `{{ route('admin.customers.customers.view', '') }}/${customer.id}` : '#'">
+                    <a :href="customer.id ? '{{ route('admin.customers.customers.view', ':id') }}'.replace(':id', customer.id) : '#'">
                         <div class="flex justify-between gap-1.5">
                             <div class="flex flex-col">
                                 <p class="font-semibold text-gray-600 dark:text-gray-300">
@@ -103,15 +103,15 @@
             },
 
             methods: {
-                getStats(filtets) {
+                getStats(filters) {
                     this.isLoading = true;
 
-                    var filtets = Object.assign({}, filtets);
+                    var filters = Object.assign({}, filters);
 
-                    filtets.type = 'top-customers';
+                    filters.type = 'top-customers';
 
                     this.$axios.get("{{ route('admin.dashboard.stats') }}", {
-                            params: filtets
+                            params: filters
                         })
                         .then(response => {
                             this.report = response.data;

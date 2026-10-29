@@ -1,33 +1,43 @@
 <?php
 
+use Webkul\Shop\CacheFilters\Large;
+use Webkul\Shop\CacheFilters\Medium;
+use Webkul\Shop\CacheFilters\Small;
+
 return [
     /*
     |--------------------------------------------------------------------------
-    | Name of route
+    | Name of Route
     |--------------------------------------------------------------------------
     |
-    | Enter the routes name to enable dynamic imagecache manipulation.
+    | Enter the route name to enable dynamic image cache manipulation.
+    |
     | This handle will define the first part of the URI:
     |
     | {route}/{template}/{filename}
     |
     | Examples: "images", "img/cache"
     |
-     */
+    | Set it to null or leave it empty to turn the route off: every image url
+    | then links the stored file itself, and the admin panel leaves out the
+    | Bagisto logo.
+    |
+    */
 
     'route' => 'cache',
 
     /*
     |--------------------------------------------------------------------------
-    | Storage paths
+    | Storage Paths
     |--------------------------------------------------------------------------
     |
-    | The following paths will be searched for the image filename, submited
-    | by URI.
+    | The configured filesystem disk is read first, so a store on object storage
+    | is served the same way a local one is. These paths are searched after it,
+    | which covers a file published beside the application.
     |
     | Define as many directories as you like.
     |
-     */
+    */
 
     'paths' => [
         storage_path('app/public'),
@@ -36,24 +46,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Manipulation templates
+    | Manipulation Templates
     |--------------------------------------------------------------------------
     |
     | Here you may specify your own manipulation filter templates.
-    | The keys of this array will define which templates
-    | are available in the URI:
+    | The keys of this array will define which templates are available
+    | in the URI:
     |
     | {route}/{template}/{filename}
     |
-    | The values of this array will define which filter class
-    | will be applied, by its fully qualified name.
+    | The values of this array will define which filter class will be
+    | applied, by its fully qualified name. An entry the image cache cannot
+    | apply is reported, and small, medium and large then fall back to the
+    | templates in Webkul\ImageCache\Templates.
     |
-     */
+    */
 
     'templates' => [
-        'small'  => 'Webkul\Shop\CacheFilters\Small',
-        'medium' => 'Webkul\Shop\CacheFilters\Medium',
-        'large'  => 'Webkul\Shop\CacheFilters\Large',
+        'small' => Small::class,
+        'medium' => Medium::class,
+        'large' => Large::class,
     ],
 
     /*
@@ -61,9 +73,9 @@ return [
     | Image Cache Lifetime
     |--------------------------------------------------------------------------
     |
-    | Lifetime in minutes of the images handled by the imagecache route.
+    | Lifetime in minutes of the images handled by the image cache route.
     |
-     */
+    */
 
-    'lifetime' => 525600,
+    'lifetime' => 43200,
 ];

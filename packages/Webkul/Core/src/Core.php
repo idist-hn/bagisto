@@ -3,16 +3,19 @@
 namespace Webkul\Core;
 
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Webkul\Core\Concerns\CurrencyFormatter;
 use Webkul\Core\Models\Channel;
+use Webkul\Core\Models\Currency;
+use Webkul\Core\Models\Locale;
 use Webkul\Core\Repositories\ChannelRepository;
 use Webkul\Core\Repositories\CountryRepository;
 use Webkul\Core\Repositories\CountryStateRepository;
 use Webkul\Core\Repositories\CurrencyRepository;
 use Webkul\Core\Repositories\ExchangeRateRepository;
 use Webkul\Core\Repositories\LocaleRepository;
+use Webkul\Customer\Contracts\CustomerGroup;
 use Webkul\Customer\Repositories\CustomerGroupRepository;
 use Webkul\Tax\Repositories\TaxCategoryRepository;
 
@@ -25,66 +28,66 @@ class Core
      *
      * @var string
      */
-    const BAGISTO_VERSION = '2.2.3';
+    const BAGISTO_VERSION = '2.5.x-dev';
 
     /**
      * Current Channel.
      *
-     * @var \Webkul\Core\Models\Channel
+     * @var Channel
      */
     protected $currentChannel;
 
     /**
      * Default Channel.
      *
-     * @var \Webkul\Core\Models\Channel
+     * @var Channel
      */
     protected $defaultChannel;
 
     /**
      * Currency.
      *
-     * @var \Webkul\Core\Models\Currency
+     * @var Currency
      */
     protected $currentCurrency;
 
     /**
      * Base Currency.
      *
-     * @var \Webkul\Core\Models\Currency
+     * @var Currency
      */
     protected $baseCurrency;
 
     /**
      * Current Locale.
      *
-     * @var \Webkul\Core\Models\Locale
+     * @var Locale
      */
     protected $currentLocale;
 
     /**
-     * Guest Customer Group
+     * Guest Customer Group.
      *
-     * @var \Webkul\Customer\Models\CustomerGroup
+     * @var CustomerGroup
      */
     protected $guestCustomerGroup;
 
     /**
-     * Exchange rates
+     * Exchange rates.
      *
      * @var array
      */
     protected $exchangeRates = [];
 
     /**
-     * Exchange rates
+     * Tax categories, keyed by id.
      *
      * @var array
      */
     protected $taxCategoriesById = [];
 
     /**
-     * Stores singleton instances
+     * Stores singleton instances.
      *
      * @var array
      */
@@ -119,7 +122,7 @@ class Core
     /**
      * Returns all channels.
      *
-     * @return \Illuminate\Support\Collection
+     * @return Collection
      */
     public function getAllChannels()
     {
@@ -129,7 +132,7 @@ class Core
     /**
      * Returns current channel models.
      *
-     * @return \Webkul\Core\Contracts\Channel
+     * @return Contracts\Channel
      */
     public function getCurrentChannel(?string $hostname = null)
     {
@@ -164,10 +167,8 @@ class Core
 
     /**
      * Returns current channel code.
-     *
-     * @return \Webkul\Core\Contracts\Channel
      */
-    public function getCurrentChannelCode(): string
+    public function getCurrentChannelCode(): ?string
     {
         return $this->getCurrentChannel()?->code;
     }
@@ -175,7 +176,7 @@ class Core
     /**
      * Returns default channel models.
      *
-     * @return \Webkul\Core\Contracts\Channel
+     * @return Contracts\Channel
      */
     public function getDefaultChannel(): ?Channel
     {
@@ -203,7 +204,7 @@ class Core
     /**
      * Returns the default channel code configured in `config/app.php`.
      */
-    public function getDefaultChannelCode(): string
+    public function getDefaultChannelCode(): ?string
     {
         return $this->getDefaultChannel()?->code;
     }
@@ -217,16 +218,16 @@ class Core
     }
 
     /**
-     * Get channel code from request.
+     * Get channel from request, falling back to the current one when the request names a channel the store does not have.
      *
-     * @return \Webkul\Core\Contracts\Channel
+     * @return Contracts\Channel
      */
     public function getRequestedChannel()
     {
         $code = request()->query('channel');
 
         if ($code) {
-            return $this->channelRepository->findOneByField('code', $code);
+            return $this->channelRepository->findOneByField('code', $code) ?? $this->getCurrentChannel();
         }
 
         return $this->getCurrentChannel();
@@ -240,7 +241,7 @@ class Core
      */
     public function getRequestedChannelCode($fallback = true)
     {
-        $channelCode = request()->get('channel');
+        $channelCode = request()->input('channel');
 
         if (! $fallback) {
             return $channelCode;
@@ -260,7 +261,7 @@ class Core
     /**
      * Return all locales.
      *
-     * @return \Illuminate\Support\Collection
+     * @return Collection
      */
     public function getAllLocales()
     {
@@ -270,7 +271,7 @@ class Core
     /**
      * Returns current locale.
      *
-     * @return \Webkul\Core\Contracts\Locale
+     * @return Contracts\Locale
      */
     public function getCurrentLocale()
     {
@@ -290,7 +291,7 @@ class Core
     /**
      * Get locale from request.
      *
-     * @return string
+     * @return Contracts\Locale
      */
     public function getRequestedLocale()
     {
@@ -313,7 +314,7 @@ class Core
      */
     public function getRequestedLocaleCode($localeKey = 'locale', $fallback = true)
     {
-        $localeCode = request()->get($localeKey);
+        $localeCode = request()->input($localeKey);
 
         if (! $fallback) {
             return $localeCode;
@@ -323,28 +324,37 @@ class Core
     }
 
     /**
-     * Check requested locale code in requested channel. If not found,
-     * then set channel default locale code.
+     * Locale codes the request applies to, expanding the locale switcher's "all" option to every
+     * locale rather than using it as a locale of its own.
+     *
+     * @param  string  $localeKey  optional
+     * @return array<int, string>
+     */
+    public function getRequestedLocaleCodes($localeKey = 'locale'): array
+    {
+        $localeCode = request()->input($localeKey);
+
+        if ($localeCode === 'all') {
+            return $this->getAllLocales()->pluck('code')->all();
+        }
+
+        return [$localeCode ?: app()->getLocale()];
+    }
+
+    /**
+     * The requested locale code when the requested channel has it, otherwise that channel's default.
      *
      * @return string
      */
     public function getRequestedLocaleCodeInRequestedChannel()
     {
-        $requestedLocaleCode = $this->getRequestedLocaleCode();
-
-        $requestedChannel = $this->getRequestedChannel();
-
-        if ($requestedChannel->locales->contains('code', $requestedLocaleCode)) {
-            return $requestedLocaleCode;
-        }
-
-        return $requestedChannel->default_locale->code;
+        return $this->getRequestedChannel()->resolveLocaleCode($this->getRequestedLocaleCode());
     }
 
     /**
      * Returns all currencies.
      *
-     * @return \Illuminate\Support\Collection
+     * @return Collection
      */
     public function getAllCurrencies()
     {
@@ -354,7 +364,7 @@ class Core
     /**
      * Returns base channel's currency model.
      *
-     * @return \Webkul\Core\Contracts\Currency
+     * @return Contracts\Currency
      */
     public function getBaseCurrency()
     {
@@ -384,7 +394,7 @@ class Core
     /**
      * Returns base channel's currency model.
      *
-     * @return \Webkul\Core\Contracts\Currency
+     * @return Contracts\Currency
      */
     public function getChannelBaseCurrency()
     {
@@ -419,11 +429,9 @@ class Core
     }
 
     /**
-     * Returns current channel's currency model.
+     * Returns current channel's currency model, falling back to the channel's base currency.
      *
-     * Will fallback to base currency if not set.
-     *
-     * @return \Webkul\Core\Contracts\Currency
+     * @return Contracts\Currency
      */
     public function getCurrentCurrency()
     {
@@ -445,7 +453,7 @@ class Core
     }
 
     /**
-     * Returns exchange rates.
+     * Returns the exchange rate of the target currency.
      *
      * @return object
      */
@@ -465,7 +473,7 @@ class Core
      *
      * @param  float  $amount
      * @param  string  $targetCurrencyCode
-     * @return string
+     * @return float
      */
     public function convertPrice($amount, $targetCurrencyCode = null)
     {
@@ -491,7 +499,7 @@ class Core
      *
      * @param  float  $amount
      * @param  string  $targetCurrencyCode
-     * @return string
+     * @return float
      */
     public function convertToBasePrice($amount, $targetCurrencyCode = null)
     {
@@ -520,7 +528,7 @@ class Core
     /**
      * Format and convert price with currency symbol.
      *
-     * @param  float  $price
+     * @param  float  $amount
      * @return string
      */
     public function currency($amount = 0)
@@ -565,7 +573,6 @@ class Core
     /**
      * Checks if current date of the given channel (in the channel timezone) is within the range.
      *
-     * @param  int|string|\Webkul\Core\Contracts\Channel  $channel
      * @param  string|null  $dateFrom
      * @param  string|null  $dateTo
      * @return bool
@@ -574,52 +581,40 @@ class Core
     {
         $channel = $this->getCurrentChannel();
 
-        $channelTimeStamp = $this->channelTimeStamp($channel);
+        $timezone = $channel->timezone ?: config('app.timezone', 'UTC');
 
-        $fromTimeStamp = strtotime($dateFrom);
+        $now = Carbon::now($timezone);
 
-        $toTimeStamp = strtotime($dateTo);
+        if (! $this->isEmptyDate($dateFrom)) {
+            $from = Carbon::parse($dateFrom, $timezone)->startOfDay();
 
-        if ($dateTo) {
-            $toTimeStamp += 86400;
+            if ($now->lt($from)) {
+                return false;
+            }
         }
 
-        if (
-            ! $this->is_empty_date($dateFrom)
-            && $channelTimeStamp < $fromTimeStamp
-        ) {
-            $result = false;
-        } elseif (
-            ! $this->is_empty_date($dateTo)
-            && $channelTimeStamp > $toTimeStamp
-        ) {
-            $result = false;
-        } else {
-            $result = true;
+        if (! $this->isEmptyDate($dateTo)) {
+            $to = Carbon::parse($dateTo, $timezone)->endOfDay();
+
+            if ($now->gt($to)) {
+                return false;
+            }
         }
 
-        return $result;
+        return true;
     }
 
     /**
-     * Get channel timestamp, timestamp will be builded with channel timezone settings.
+     * Get channel timestamp using channel timezone or Laravel default timezone.
      *
-     * @param  \Webkul\Core\Contracts\Channel  $channel
+     * @param  Contracts\Channel  $channel
      * @return int
      */
     public function channelTimeStamp($channel)
     {
-        $timezone = $channel->timezone;
+        $timezone = $channel->timezone ?: config('app.timezone', 'UTC');
 
-        $currentTimezone = @date_default_timezone_get();
-
-        @date_default_timezone_set($timezone);
-
-        $date = date('Y-m-d H:i:s');
-
-        @date_default_timezone_set($currentTimezone);
-
-        return strtotime($date);
+        return Carbon::now($timezone)->timestamp;
     }
 
     /**
@@ -628,13 +623,13 @@ class Core
      * @param  string  $date
      * @return bool
      */
-    public function is_empty_date($date)
+    public function isEmptyDate($date)
     {
         return preg_replace('#[ 0:-]#', '', $date) === '';
     }
 
     /**
-     * Format date using current channel.
+     * Format date using current channel timezone or Laravel default timezone.
      *
      * @param  \Illuminate\Support\Carbon|string|null  $date
      * @param  string  $format
@@ -652,13 +647,37 @@ class Core
             $date = Carbon::parse($date);
         }
 
-        $date->setTimezone($channel->timezone);
+        $timezone = $channel->timezone ?: config('app.timezone', 'UTC');
 
-        return $date->format($format);
+        $date->setTimezone($timezone);
+
+        return $date->translatedFormat($format);
     }
 
     /**
-     * Retrieve information from payment configuration.
+     * Week range.
+     *
+     * @param  string  $date
+     * @param  int  $day
+     * @return string
+     */
+    public function xWeekRange($date, $day)
+    {
+        $carbonDate = Carbon::parse($date);
+
+        if (! $day) {
+            $start = $carbonDate->isSunday() ? $carbonDate : $carbonDate->previous(Carbon::SUNDAY);
+
+            return $start->format('Y-m-d');
+        } else {
+            $end = $carbonDate->isSaturday() ? $carbonDate : $carbonDate->next(Carbon::SATURDAY);
+
+            return $end->format('Y-m-d');
+        }
+    }
+
+    /**
+     * Retrieve a value from the system configuration.
      */
     public function getConfigData(string $field, ?string $currentChannelCode = null, ?string $currentLocaleCode = null): mixed
     {
@@ -666,9 +685,20 @@ class Core
     }
 
     /**
+     * Get config field.
+     *
+     * @param  string  $fieldName
+     * @return array
+     */
+    public function getConfigField($fieldName)
+    {
+        return system_config()->getConfigField($fieldName);
+    }
+
+    /**
      * Retrieve all countries.
      *
-     * @return \Illuminate\Support\Collection
+     * @return Collection
      */
     public function countries()
     {
@@ -681,7 +711,7 @@ class Core
      * @param  string  $code
      * @return string
      */
-    public function country_name($code)
+    public function countryName($code)
     {
         $country = $this->countryRepository->findOneByField('code', $code);
 
@@ -692,7 +722,7 @@ class Core
      * Retrieve all country states.
      *
      * @param  string  $countryCode
-     * @return \Illuminate\Support\Collection
+     * @return Collection
      */
     public function states($countryCode)
     {
@@ -702,7 +732,7 @@ class Core
     /**
      * Retrieve all grouped states by country code.
      *
-     * @return \Illuminate\Support\Collection
+     * @return array
      */
     public function groupedStatesByCountries()
     {
@@ -716,9 +746,9 @@ class Core
     }
 
     /**
-     * Retrieve all grouped states by country code.
+     * Find a state by its country code and state code.
      *
-     * @return \Illuminate\Support\Collection
+     * @return Contracts\CountryState|false
      */
     public function findStateByCountryCode($countryCode = null, $stateCode = null)
     {
@@ -731,20 +761,6 @@ class Core
         } else {
             return false;
         }
-    }
-
-    /**
-     * Return guest customer group.
-     *
-     * @return \Webkul\Customer\Contract\CustomerGroup
-     */
-    public function getGuestCustomerGroup()
-    {
-        if ($this->guestCustomerGroup) {
-            return $this->guestCustomerGroup;
-        }
-
-        return $this->guestCustomerGroup = $this->customerGroupRepository->findOneByField('code', 'guest');
     }
 
     /**
@@ -778,48 +794,32 @@ class Core
     }
 
     /**
-     * Week range.
+     * Return guest customer group.
      *
-     * @param  string  $date
-     * @param  int  $day
-     * @return string
+     * @return CustomerGroup
      */
-    public function xWeekRange($date, $day)
+    public function getGuestCustomerGroup()
     {
-        $ts = strtotime($date);
-
-        if (! $day) {
-            $start = (date('D', $ts) == 'Sun') ? $ts : strtotime('last sunday', $ts);
-
-            return date('Y-m-d', $start);
-        } else {
-            $end = (date('D', $ts) == 'Sat') ? $ts : strtotime('next saturday', $ts);
-
-            return date('Y-m-d', $end);
+        if ($this->guestCustomerGroup) {
+            return $this->guestCustomerGroup;
         }
-    }
 
-    /**
-     * Get config field.
-     *
-     * @param  string  $fieldName
-     * @return array
-     */
-    public function getConfigField($fieldName)
-    {
-        return system_config()->getConfigField($fieldName);
+        return $this->guestCustomerGroup = $this->customerGroupRepository->findOneByField('code', 'guest');
     }
 
     /**
      * Convert empty strings to null.
      *
-     * @param  array  $array1
+     * @param  array  $array
      * @return array
      */
     public function convertEmptyStringsToNull($array)
     {
         foreach ($array as $key => $value) {
-            if ($value == '' || $value == 'null') {
+            if (
+                $value == ''
+                || $value == 'null'
+            ) {
                 $array[$key] = null;
             }
         }
@@ -851,9 +851,9 @@ class Core
     }
 
     /**
-     * Create singleton object through single facade.
+     * Get the tax category of the given id.
      *
-     * @param  string  $className
+     * @param  int  $id
      * @return object
      */
     public function getTaxCategoryById($id)
@@ -878,10 +878,10 @@ class Core
     {
         $senderName = $this->getConfigData('emails.configure.email_settings.sender_name') ?: config('mail.from.name');
 
-        $senderEmail = $this->getConfigData('emails.configure.email_settings.shop_email_from') ?: config('mail.from.address');
+        $senderEmail = $this->getConfigData('emails.configure.email_settings.sender_email') ?: config('mail.from.address');
 
         return [
-            'name'  => $senderName,
+            'name' => $senderName,
             'email' => $senderEmail,
         ];
     }
@@ -898,10 +898,11 @@ class Core
             ?: config('mail.from.name'));
 
         $adminEmail = $this->getConfigData('emails.configure.email_settings.admin_email')
-            ?: config('mail.admin.address');
+            ?: (config('mail.admin.address')
+            ?: config('mail.from.address'));
 
         return [
-            'name'  => $adminName,
+            'name' => $adminName,
             'email' => $adminEmail,
         ];
     }
@@ -918,10 +919,11 @@ class Core
             ?: config('mail.from.name'));
 
         $contactEmail = $this->getConfigData('emails.configure.email_settings.contact_email')
-            ?: config('mail.contact.address');
+            ?: (config('mail.contact.address')
+            ?: config('mail.from.address'));
 
         return [
-            'name'  => $contactName,
+            'name' => $contactName,
             'email' => $contactEmail,
         ];
     }
@@ -934,5 +936,83 @@ class Core
     public function getMaxUploadSize()
     {
         return ini_get('upload_max_filesize');
+    }
+
+    /**
+     * Get Speculation Rules.
+     *
+     * @return array
+     */
+    public function getSpeculationRules()
+    {
+        $configPath = 'general.content.speculation_rules.';
+
+        $rules = [];
+
+        if ($this->getConfigData($configPath.'prerender_enabled')) {
+            $prerenderEagerness = $this->getConfigData($configPath.'prerender_eagerness') ?? 'moderate';
+
+            $prerenderIgnoreUrls = array_filter(
+                explode('|', $this->getConfigData($configPath.'prerender_ignore_urls')),
+                fn ($url) => trim($url) !== ''
+            );
+
+            $prerenderIgnoreParams = array_filter(
+                explode('|', $this->getConfigData($configPath.'prerender_ignore_url_params')),
+                fn ($param) => trim($param) !== ''
+            );
+
+            $conditions = [['href_matches' => '/*']];
+
+            foreach ($prerenderIgnoreUrls as $url) {
+                $conditions[] = ['not' => ['href_matches' => trim($url)]];
+            }
+
+            foreach ($prerenderIgnoreParams as $param) {
+                $param = trim($param);
+                $conditions[] = ['not' => ['selector_matches' => "[href*='?{$param}=']"]];
+            }
+
+            $rules['prerender'][] = [
+                'source' => 'document',
+                'where' => ['and' => $conditions],
+                'eagerness' => $prerenderEagerness,
+            ];
+        }
+
+        if ($this->getConfigData($configPath.'prefetch_enabled')) {
+            $prefetchEagerness = $this->getConfigData($configPath.'prefetch_eagerness') ?? 'moderate';
+
+            $prefetchIgnoreUrls = array_filter(
+                explode('|', $this->getConfigData($configPath.'prefetch_ignore_urls')),
+                fn ($url) => trim($url) !== ''
+            );
+
+            $prefetchIgnoreParams = array_filter(
+                explode('|', $this->getConfigData($configPath.'prefetch_ignore_url_params')),
+                fn ($param) => trim($param) !== ''
+            );
+
+            $conditions = [['href_matches' => '/*']];
+
+            foreach ($prefetchIgnoreUrls as $url) {
+                $conditions[] = ['not' => ['href_matches' => trim($url)]];
+            }
+
+            foreach ($prefetchIgnoreParams as $param) {
+                $param = trim($param);
+                $conditions[] = ['not' => ['selector_matches' => "[href*='?{$param}=']"]];
+            }
+
+            $rules['prefetch'][] = [
+                'source' => 'document',
+                'where' => ['and' => $conditions],
+                'requires' => ['anonymous-client-ip-when-cross-origin'],
+                'referrer_policy' => 'no-referrer',
+                'eagerness' => $prefetchEagerness,
+            ];
+        }
+
+        return $rules;
     }
 }

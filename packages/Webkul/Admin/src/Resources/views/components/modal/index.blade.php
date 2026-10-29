@@ -18,7 +18,7 @@
                 {{ $header }}
 
                 <span
-                    class="icon-cancel-1 cursor-pointer text-3xl hover:rounded-md hover:bg-gray-100 dark:hover:bg-gray-950"
+                    class="icon-close cursor-pointer text-3xl hover:rounded-md hover:bg-gray-100 dark:hover:bg-gray-950"
                     @click="toggle"
                 >
                 </span>
@@ -36,7 +36,7 @@
 
     @isset($footer)
         <template v-slot:footer>
-            <div {{ $content->attributes->merge(['class' => 'flex justify-end px-4 py-2.5']) }}>
+            <div {{ $footer->attributes->merge(['class' => 'flex justify-end px-4 py-2.5']) }}>
                 {{ $footer }}
             </div>
         </template>
@@ -65,7 +65,7 @@
                 leave-to-class="opacity-0"
             >
                 <div
-                    class="fixed inset-0 z-[10001] bg-gray-500 bg-opacity-50 transition-opacity"
+                    class="fixed inset-0 z-10001 bg-gray-500/50 transition-opacity"
                     v-show="isOpen"
                 ></div>
             </transition>
@@ -84,8 +84,11 @@
                     class="fixed inset-0 z-[10002] transform overflow-y-auto transition"
                     v-if="isOpen"
                 >
-                    <div class="flex min-h-full items-end justify-center p-4 sm:items-center sm:p-0">
-                        <div class="box-shadow absolute top-1/2 z-[999] w-full max-w-[568px] -translate-y-1/2 rounded-lg bg-white dark:bg-gray-900 max-md:w-[90%] ltr:left-1/2 ltr:-translate-x-1/2 rtl:right-1/2 rtl:translate-x-1/2">
+                    <div class="flex min-h-screen items-end justify-center p-4 sm:items-center sm:p-0">
+                        <div
+                            class="box-shadow relative z-[999] w-screen rounded-lg bg-white dark:bg-gray-900 max-lg:mb-4 max-lg:mt-4 max-md:w-[90%]"
+                            :class="panelClass || 'max-w-[568px]'"
+                        >
                             <!-- Header Slot -->
                             <slot
                                 name="header"
@@ -110,7 +113,7 @@
         app.component('v-modal', {
             template: '#v-modal-template',
 
-            props: ['isActive'],
+            props: ['isActive', 'panelClass'],
 
             data() {
                 return {
@@ -125,7 +128,7 @@
                     if (this.isOpen) {
                         document.body.style.overflow = 'hidden';
                     } else {
-                        document.body.style.overflow ='auto';
+                        document.body.style.overflow = 'auto';
                     }
 
                     this.$emit('toggle', { isActive: this.isOpen });

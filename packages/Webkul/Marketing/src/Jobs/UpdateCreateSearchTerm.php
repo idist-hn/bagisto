@@ -7,7 +7,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\DB;
 use Webkul\Marketing\Repositories\SearchTermRepository;
 
 class UpdateCreateSearchTerm implements ShouldQueue
@@ -30,15 +29,8 @@ class UpdateCreateSearchTerm implements ShouldQueue
      *
      * @return void
      */
-    public function handle()
+    public function handle(SearchTermRepository $searchTermRepository)
     {
-        app(SearchTermRepository::class)->updateOrCreate([
-            'term'       => $this->data['term'],
-            'channel_id' => $this->data['channel_id'],
-            'locale'     => $this->data['locale'],
-        ], [
-            'uses'    => DB::raw('uses + 1'),
-            'results' => $this->data['results'],
-        ]);
+        $searchTermRepository->recordSearch($this->data);
     }
 }

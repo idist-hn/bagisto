@@ -52,6 +52,8 @@
             <x-admin::datagrid
                 :src="route('admin.marketing.search_seo.url_rewrites.index')"
                 ref="datagrid"
+                :shimmer-columns="8"
+                :shimmer-mass-action="true"
             >
                 <template #body="{
                     isLoading,
@@ -62,7 +64,10 @@
                     performAction
                 }">
                     <template v-if="isLoading">
-                        <x-admin::shimmer.datagrid.table.body />
+                        <x-admin::shimmer.datagrid.table.body
+                            :columns="8"
+                            :massAction="true"
+                        />
                     </template>
 
                     <template v-else>
@@ -89,26 +94,38 @@
                             </p>
 
                             <!-- Id -->
-                            <p>@{{ record.id }}</p>
+                            <p class="wrap-break-word">
+                                @{{ record.id }}
+                            </p>
 
                             <!-- For -->
-                            <p>@{{ record.entity_type }}</p>
+                            <p class="wrap-break-word">
+                                @{{ record.entity_type }}
+                            </p>
 
                             <!-- Request Path -->
-                            <p>@{{ record.request_path }}</p>
+                            <p class="wrap-break-word">
+                                @{{ record.request_path }}
+                            </p>
 
                             <!-- Target Path -->
-                            <p>@{{ record.target_path }}</p>
+                            <p class="wrap-break-word">
+                                @{{ record.target_path }}
+                            </p>
 
                             <!-- Redirect Type -->
-                            <p>@{{ record.redirect_type }}</p>
+                            <p class="wrap-break-word">
+                                @{{ record.redirect_type }}
+                            </p>
 
                             <!-- Locale -->
-                            <p>@{{ record.locale }}</p>
+                            <p class="wrap-break-word">
+                                @{{ record.locale }}
+                            </p>
 
                             <!-- Actions -->
                             <div class="flex justify-end">
-                                @if (bouncer()->hasPermission('marketing.url_rewrites.edit'))
+                                @if (bouncer()->hasPermission('marketing.search_seo.url_rewrites.edit'))
                                     <a @click="selectedSitemap=1; editModal(record)">
                                         <span
                                             :class="record.actions.find(action => action.index === 'edit')?.icon"
@@ -118,7 +135,7 @@
                                     </a>
                                 @endif
 
-                                @if (bouncer()->hasPermission('marketing.url_rewrites.delete'))
+                                @if (bouncer()->hasPermission('marketing.search_seo.url_rewrites.delete'))
                                     <a @click="performAction(record.actions.find(action => action.index === 'delete'))">
                                         <span
                                             :class="record.actions.find(action => action.index === 'delete')?.icon"
@@ -275,7 +292,12 @@
                                     :label="trans('admin::app.marketing.search-seo.url-rewrites.index.create.locale')"
                                 >
                                     @foreach (core()->getAllLocales() as $locale)
-                                        <option value="{{ $locale->code }}">{{ $locale->name }}</option>
+                                        <option 
+                                            value="{{ $locale->code }}"
+                                            v-pre
+                                        >
+                                            {{ $locale->name }}
+                                        </option>
                                     @endforeach
                                 </x-admin::form.control-group.control>
 

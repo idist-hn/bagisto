@@ -19,7 +19,7 @@
         type="text/x-template"
         id="v-cart-items-template"
     >
-        <div class="box-shadow rounded bg-white dark:bg-gray-900">
+        <div class="box-shadow rounded-sm bg-white dark:bg-gray-900">
             <div class="flex justify-between p-4">
                 <p class="text-base font-semibold text-gray-800 dark:text-white">
                     @lang('admin::app.sales.orders.create.cart.items.title')
@@ -78,12 +78,12 @@
                         <div class="flex gap-2.5">
                             <!-- Image -->
                             <div
-                                class="relative h-[60px] max-h-[60px] w-full max-w-[60px] overflow-hidden rounded"
+                                class="relative h-15 max-h-15 w-full max-w-15 overflow-hidden rounded-sm"
                                 :class="{'overflow-hidden rounded border border-dashed border-gray-300 dark:border-gray-800 dark:mix-blend-exclusion dark:invert': ! item.product.images.length}"
                             >
                                 <template v-if="! item.product.images.length">
                                     <img
-                                        class="relative h-[60px] max-h-[60px] w-full max-w-[60px] rounded" 
+                                        class="relative h-15 max-h-15 w-full max-w-15 rounded-sm" 
                                         src="{{ bagisto_asset('images/product-placeholders/front.svg') }}"
                                     >
 
@@ -94,7 +94,7 @@
 
                                 <template v-else>
                                     <img
-                                        class="relative h-[60px] max-h-[60px] w-full max-w-[60px] rounded" 
+                                        class="relative h-15 max-h-15 w-full max-w-15 rounded-sm" 
                                         :src="item.product.images[0].url"
                                     >
                                 </template>
@@ -175,6 +175,7 @@
                             </p>
 
                             <x-admin::quantity-changer
+                                v-if="item.can_change_qty"
                                 ::name="'qty[' + item.id + ']'"
                                 ::value="item.quantity"
                                 class="w-max gap-x-4 rounded-l px-4 py-1"
@@ -249,7 +250,7 @@
                 </x-slot>
 
                 <!-- Drawer Content -->
-                <x-slot:content class="!p-0">
+                <x-slot:content class="p-0!">
                     <div
                         class="grid"
                         v-if="searchedProducts.length"
@@ -262,12 +263,12 @@
                             <div class="flex gap-2.5">
                                 <!-- Image -->
                                 <div
-                                    class="relative h-[60px] max-h-[60px] w-full max-w-[60px] overflow-hidden rounded"
+                                    class="relative h-15 max-h-15 w-full max-w-15 overflow-hidden rounded-sm"
                                     :class="{'border border-dashed border-gray-300 dark:border-gray-800 dark:mix-blend-exclusion dark:invert': ! product.images.length}"
                                 >
                                     <template v-if="! product.images.length">
                                         <img
-                                            class="relative h-[60px] max-h-[60px] w-full max-w-[60px] rounded" 
+                                            class="relative h-15 max-h-15 w-full max-w-15 rounded-sm" 
                                             src="{{ bagisto_asset('images/product-placeholders/front.svg') }}"
                                         >
                                     
@@ -278,7 +279,7 @@
 
                                     <template v-else>
                                         <img
-                                            class="relative h-[60px] max-h-[60px] w-full max-w-[60px] rounded"
+                                            class="relative h-15 max-h-15 w-full max-w-15 rounded-sm"
                                             :src="product.images[0].url"
                                         >
                                     </template>
@@ -286,7 +287,7 @@
 
                                 <!-- Details -->
                                 <div class="grid place-content-start gap-1.5">
-                                    <p class="text-base font-semibold text-gray-800 dark:text-white">
+                                    <p class="break-all text-base font-semibold text-gray-800 dark:text-white">
                                         @{{ product.name }}
                                     </p>
 
@@ -294,7 +295,10 @@
                                         @{{ "@lang('admin::app.sales.orders.create.cart.items.search.sku')".replace(':sku', product.sku) }}
                                     </p>
 
-                                    <p class="text-green-600">
+                                    <p
+                                        class="text-green-600"
+                                        v-if="product.type !== 'booking'"
+                                    >
                                         @{{ "@lang('admin::app.sales.orders.create.cart.items.search.available-qty')".replace(':qty', availbleQty(product)) }}
                                     </p>
                                 </div>
@@ -311,28 +315,30 @@
                                             @{{ product.formatted_price }}
                                         </p>
 
-                                        <x-admin::form.control-group class="!mb-0">
-                                            <x-admin::form.control-group.label class="required justify-end">
-                                                @lang('admin::app.sales.orders.create.cart.items.search.qty')
-                                            </x-admin::form.control-group.label>
-
+                                        <x-admin::form.control-group class="mb-0!">
                                             <x-admin::form.control-group.control
                                                 type="hidden"
                                                 name="product_id"
                                                 ::value="product.id"
                                             />
 
-                                            <x-admin::form.control-group.control
-                                                type="text"
-                                                name="qty"
-                                                class="!w-20 !px-2 !py-1.5"
-                                                value="1"
-                                                rules="required|numeric|min_value:1"
-                                                :label="trans('admin::app.sales.orders.create.cart.items.search.qty')"
-                                                :placeholder="trans('admin::app.sales.orders.create.cart.items.search.qty')"
-                                            />
+                                            <template v-if="product.can_change_qty">
+                                                <x-admin::form.control-group.label class="required justify-end">
+                                                    @lang('admin::app.sales.orders.create.cart.items.search.qty')
+                                                </x-admin::form.control-group.label>
 
-                                            <x-admin::form.control-group.error name="qty" />
+                                                <x-admin::form.control-group.control
+                                                    type="text"
+                                                    name="qty"
+                                                    class="w-20! px-2! py-1.5!"
+                                                    value="1"
+                                                    rules="required|numeric|min_value:1"
+                                                    :label="trans('admin::app.sales.orders.create.cart.items.search.qty')"
+                                                    :placeholder="trans('admin::app.sales.orders.create.cart.items.search.qty')"
+                                                />
+
+                                                <x-admin::form.control-group.error name="qty" />
+                                            </template>
                                         </x-admin::form.control-group>
 
                                         <button
@@ -420,7 +426,8 @@
                     
                     this.$axios.get("{{ route('admin.catalog.products.search') }}", {
                             params: {
-                                query: this.searchTerm
+                                query: this.searchTerm,
+                                customer_id: this.cart.customer_id
                             }
                         })
                         .then(function(response) {
@@ -450,17 +457,36 @@
                                 }
                             })
                                 .then(response => {
-                                    if (! response.data.data) {
+                                    const payload = response.data.data;
+
+                                    if (! payload) {
                                         window.location.reload();
 
                                         return;
                                     }
 
-                                    this.$emit('remove-from-cart', response.data.data);
+                                    /**
+                                     * Cart-shaped payloads are emitted upward; error
+                                     * payloads (only `message`) are surfaced as a flash
+                                     * toast so they don't overwrite the cart state.
+                                     */
+                                    if (payload.items !== undefined) {
+                                        this.$emit('remove-from-cart', payload);
 
-                                    this.$emitter.emit('add-flash', { type: 'success', message: response.data.message });
+                                        this.$emitter.emit('add-flash', { type: 'success', message: response.data.message });
+                                    } else {
+                                        this.$emitter.emit('add-flash', {
+                                            type: 'error',
+                                            message: payload.message || response.data.message || 'Unable to remove the cart item.',
+                                        });
+                                    }
                                 })
-                                .catch(error => {});
+                                .catch(error => {
+                                    this.$emitter.emit('add-flash', {
+                                        type: 'error',
+                                        message: error.response?.data?.message || 'Unable to remove the cart item.',
+                                    });
+                                });
                         }
                     });
                 },
@@ -476,19 +502,42 @@
 
                     this.$axios.put("{{ route('admin.sales.cart.items.update', $cart->id) }}", params)
                         .then(response => {
-                            this.$emit('cart-item-updated', response.data.data);
-
-                            this.$emitter.emit('add-flash', { type: 'success', message: response.data.message });
-
                             this.isUpdating = false;
 
+                            /**
+                             * updateItem() returns { data: CartResource, message } on success
+                             * and only { message } on failure (e.g. quantity exceeds stock).
+                             * Guard against emitting the error object upward, which would
+                             * clobber the cart state and crash the v-for render.
+                             */
+                            const payload = response.data.data;
+
+                            if (payload && payload.items !== undefined) {
+                                this.$emit('cart-item-updated', payload);
+
+                                this.$emitter.emit('add-flash', { type: 'success', message: response.data.message });
+                            } else {
+                                this.$emitter.emit('add-flash', {
+                                    type: 'error',
+                                    message: payload?.message || response.data.message || 'Unable to update the cart item.',
+                                });
+                            }
                         })
                         .catch(error => {
                             this.isUpdating = false;
+
+                            this.$emitter.emit('add-flash', {
+                                type: 'error',
+                                message: error.response?.data?.message || 'Unable to update the cart item.',
+                            });
                         });
                 },
 
                 availbleQty(product) {
+                    if (product.qty_available !== undefined && product.qty_available !== null) {
+                        return product.qty_available;
+                    }
+
                     let qty = 0;
 
                     product.inventories.forEach(function (inventory) {

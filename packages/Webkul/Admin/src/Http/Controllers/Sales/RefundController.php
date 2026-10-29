@@ -2,8 +2,12 @@
 
 namespace Webkul\Admin\Http\Controllers\Sales;
 
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
+use Illuminate\View\View;
 use Webkul\Admin\DataGrids\Sales\OrderRefundDataGrid;
 use Webkul\Admin\Http\Controllers\Controller;
+use Webkul\Sales\Exceptions\InvalidRefundQuantityException;
 use Webkul\Sales\Repositories\OrderItemRepository;
 use Webkul\Sales\Repositories\OrderRepository;
 use Webkul\Sales\Repositories\RefundRepository;
@@ -24,7 +28,7 @@ class RefundController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function index()
     {
@@ -38,7 +42,7 @@ class RefundController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function create(int $orderId)
     {
@@ -50,7 +54,7 @@ class RefundController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(int $orderId)
     {
@@ -63,8 +67,9 @@ class RefundController extends Controller
         }
 
         $this->validate(request(), [
-            'refund.items'   => 'array',
+            'refund.items' => 'array',
             'refund.items.*' => 'required|numeric|min:0',
+            'refund.shipping' => 'sometimes|numeric|min:0|max:'.($order->base_shipping_invoiced - $order->base_shipping_refunded),
         ]);
 
         $data = request()->all();
@@ -73,12 +78,22 @@ class RefundController extends Controller
             $data['refund']['shipping'] = 0;
         }
 
-        $totals = $this->refundRepository->getOrderItemsRefundSummary($data['refund'], $orderId);
-
-        if (! $totals) {
+        if (! $order->ownsItems(array_keys((array) ($data['refund']['items'] ?? [])))) {
             session()->flash('error', trans('admin::app.sales.refunds.create.invalid-qty'));
 
-            return redirect()->route('admin.sales.refunds.index');
+            return redirect()->back();
+        }
+
+        try {
+            $totals = $this->refundRepository->getOrderItemsRefundSummary($data['refund'], $orderId);
+
+            if (! $totals) {
+                throw new InvalidRefundQuantityException(trans('admin::app.sales.refunds.create.invalid-qty'));
+            }
+        } catch (InvalidRefundQuantityException $invalidRefundQuantityException) {
+            session()->flash('error', $invalidRefundQuantityException->getMessage());
+
+            return redirect()->back();
         }
 
         $maxRefundAmount = $totals['grand_total']['price'] - $order->refunds()->sum('base_adjustment_refund');
@@ -103,13 +118,13 @@ class RefundController extends Controller
 
         session()->flash('success', trans('admin::app.sales.refunds.create.create-success'));
 
-        return redirect()->route('admin.sales.refunds.index');
+        return redirect()->route('admin.sales.orders.view', $orderId);
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @return \Illuminate\Http\JsonResponse|mixed
+     * @return JsonResponse|mixed
      */
     public function updateTotals(int $orderId)
     {
@@ -128,7 +143,7 @@ class RefundController extends Controller
      * Show the view for the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function view($id)
     {

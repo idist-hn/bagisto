@@ -1,6 +1,21 @@
 <v-flash-group ref='flashes'></v-flash-group>
 
 @pushOnce('scripts')
+    @php
+        $flashes = [];
+
+        foreach (['success', 'warning', 'error', 'info'] as $type) {
+            if (session()->has($type)) {
+                $flashes[] = [
+                    'type' => $type,
+                    'message' => session($type)
+                ];
+            }
+        }
+
+        $willResponseBeCached = \Webkul\FPC\FullPageCache::willCache();
+    @endphp
+
     <script
         type="text/x-template"
         id="v-flash-group-template"
@@ -47,16 +62,30 @@
             },
 
             created() {
-                @foreach (['success', 'warning', 'error', 'info'] as $key)
-                    @if (session()->has($key))
-                        this.flashes.push({'type': '{{ $key }}', 'message': "{{ session($key) }}", 'uid':  this.uid++});
-                    @endif
-                @endforeach
+                this.loadInitialFlashes();
 
                 this.registerGlobalEvents();
             },
 
             methods: {
+                loadInitialFlashes() {
+                    @if ($willResponseBeCached)
+                        let flashes = '<bagisto-response-cache-session-flashes>';
+                    @else
+                        let flashes = @json($flashes);
+                    @endif
+
+                    if (typeof(flashes) === 'string') {
+                        return;
+                    }
+                    
+                    flashes.forEach(flash => {
+                        flash.uid = this.uid++;
+
+                        this.flashes.push(flash);
+                    });
+                },
+
                 add(flash) {
                     flash.uid = this.uid++;
 

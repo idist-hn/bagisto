@@ -9,10 +9,11 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Webkul\DataTransfer\Helpers\Import as ImportHelper;
+use Webkul\DataTransfer\Jobs\Concerns\RetriesOnDeadlock;
 
 class IndexBatch implements ShouldQueue
 {
-    use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Batchable, Dispatchable, InteractsWithQueue, Queueable, RetriesOnDeadlock, SerializesModels;
 
     /**
      * Create a new job instance.
@@ -36,6 +37,10 @@ class IndexBatch implements ShouldQueue
             ->setImport($this->importBatch->import)
             ->getTypeImporter();
 
-        $typeImported->indexBatch($this->importBatch);
+        try {
+            $this->retryOnDeadlock(fn () => $typeImported->indexBatch($this->importBatch));
+        } finally {
+            $typeImported->releaseBatchMemory();
+        }
     }
 }

@@ -124,7 +124,7 @@
                     </x-shop::form.control-group.label>
 
                     <x-shop::form.control-group.control
-                        type="text"
+                        type="email"
                         name="email"
                         rules="required|email"
                         :value="old('email') ?? $address->email"
@@ -186,7 +186,7 @@
                         <x-shop::form.control-group.control
                             type="text"
                             name="address[{{ $i }}]"
-                            :value="old('address[{{$i}}]', $addresses[$i] ?? '')"
+                            :value="old('address.'.$i, $addresses[$i] ?? '')"
                             rules="address"
                             :label="trans('shop::app.customers.account.addresses.edit.street-address')"
                             :placeholder="trans('shop::app.customers.account.addresses.edit.street-address')"
@@ -210,10 +210,11 @@
                     <x-shop::form.control-group.control
                         type="select"
                         name="country"
-                        rules="{{ core()->isStateRequired() ? 'required' : '' }}"
+                        rules="{{ core()->isCountryRequired() ? 'required' : '' }}"
                         v-model="addressData.country"
                         :aria-label="trans('shop::app.customers.account.addresses.edit.country')"
                         :label="trans('shop::app.customers.account.addresses.edit.country')"
+                        @change="addressData.state = ''"
                     >
                         @foreach (core()->countries() as $country)
                             <option 
@@ -260,6 +261,7 @@
                             name="state"
                             rules="{{ core()->isStateRequired() ? 'required' : '' }}"
                             :value="old('state') ?? $address->state"
+                            v-model="addressData.state"
                             :label="trans('shop::app.customers.account.addresses.edit.state')"
                             :placeholder="trans('shop::app.customers.account.addresses.edit.state')"
                         />
@@ -297,8 +299,8 @@
                     <x-shop::form.control-group.control
                         type="text"
                         name="postcode"
-                        rules="{{ core()->isPostCodeRequired() ? 'required' : '' }}|numeric "
-                        :value="old('postal-code') ?? $address->postcode"
+                        rules="{{ core()->isPostCodeRequired() ? 'required' : '' }}|postcode"
+                        :value="old('postcode') ?? $address->postcode"
                         :label="trans('shop::app.customers.account.addresses.edit.post-code')"
                         :placeholder="trans('shop::app.customers.account.addresses.edit.post-code')"
                     />

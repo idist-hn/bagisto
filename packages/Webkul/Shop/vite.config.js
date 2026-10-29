@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from "vite";
 import vue from "@vitejs/plugin-vue";
 import laravel from "laravel-vite-plugin";
+import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
 export default defineConfig(({ mode }) => {
@@ -11,6 +12,17 @@ export default defineConfig(({ mode }) => {
     return {
         build: {
             emptyOutDir: true,
+            minify: "esbuild",
+            cssCodeSplit: true,
+            rollupOptions: {
+                output: {
+                    manualChunks: {
+                        vue: ["vue"],
+                        veeValidate: ["vee-validate", "@vee-validate/rules", "@vee-validate/i18n"],
+                        vendor: ["axios", "mitt"]
+                    }
+                }
+            }
         },
 
         envDir,
@@ -18,10 +30,13 @@ export default defineConfig(({ mode }) => {
         server: {
             host: process.env.VITE_HOST || "localhost",
             port: process.env.VITE_PORT || 5173,
+            cors: true,
         },
 
         plugins: [
             vue(),
+
+            tailwindcss(),
 
             laravel({
                 hotFile: "../../../public/shop-default-vite.hot",
@@ -32,6 +47,7 @@ export default defineConfig(({ mode }) => {
                     "src/Resources/assets/js/app.js",
                 ],
                 refresh: true,
+                preload: false,
             }),
         ],
 

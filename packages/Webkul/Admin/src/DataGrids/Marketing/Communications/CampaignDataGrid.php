@@ -2,6 +2,7 @@
 
 namespace Webkul\Admin\DataGrids\Marketing\Communications;
 
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Webkul\DataGrid\DataGrid;
 
@@ -10,7 +11,7 @@ class CampaignDataGrid extends DataGrid
     /**
      * Prepare query builder.
      *
-     * @return \Illuminate\Database\Query\Builder
+     * @return Builder
      */
     public function prepareQueryBuilder()
     {
@@ -35,39 +36,49 @@ class CampaignDataGrid extends DataGrid
     public function prepareColumns()
     {
         $this->addColumn([
-            'index'      => 'id',
-            'label'      => trans('admin::app.marketing.communications.campaigns.index.datagrid.id'),
-            'type'       => 'integer',
-            'sortable'   => true,
+            'index' => 'id',
+            'label' => trans('admin::app.marketing.communications.campaigns.index.datagrid.id'),
+            'type' => 'integer',
+            'sortable' => true,
             'filterable' => true,
         ]);
 
         $this->addColumn([
-            'index'      => 'name',
-            'label'      => trans('admin::app.marketing.communications.campaigns.index.datagrid.name'),
-            'type'       => 'string',
+            'index' => 'name',
+            'label' => trans('admin::app.marketing.communications.campaigns.index.datagrid.name'),
+            'type' => 'string',
             'searchable' => true,
-            'sortable'   => true,
+            'sortable' => true,
             'filterable' => true,
         ]);
 
         $this->addColumn([
-            'index'      => 'subject',
-            'label'      => trans('admin::app.marketing.communications.campaigns.index.datagrid.subject'),
-            'type'       => 'string',
+            'index' => 'subject',
+            'label' => trans('admin::app.marketing.communications.campaigns.index.datagrid.subject'),
+            'type' => 'string',
             'searchable' => true,
-            'sortable'   => true,
+            'sortable' => true,
             'filterable' => true,
         ]);
 
         $this->addColumn([
-            'index'      => 'status',
-            'label'      => trans('admin::app.marketing.communications.campaigns.index.datagrid.status'),
-            'type'       => 'boolean',
+            'index' => 'status',
+            'label' => trans('admin::app.marketing.communications.campaigns.index.datagrid.status'),
+            'type' => 'boolean',
             'searchable' => true,
-            'sortable'   => true,
+            'sortable' => true,
             'filterable' => true,
-            'closure'    => function ($value) {
+            'filterable_options' => [
+                [
+                    'label' => trans('admin::app.marketing.communications.campaigns.index.datagrid.active'),
+                    'value' => 1,
+                ],
+                [
+                    'label' => trans('admin::app.marketing.communications.campaigns.index.datagrid.inactive'),
+                    'value' => 0,
+                ],
+            ],
+            'closure' => function ($value) {
                 if ($value->status) {
                     return trans('admin::app.marketing.communications.campaigns.index.datagrid.active');
                 }
@@ -86,10 +97,10 @@ class CampaignDataGrid extends DataGrid
     {
         if (bouncer()->hasPermission('marketing.communications.campaigns.edit')) {
             $this->addAction([
-                'icon'   => 'icon-edit',
-                'title'  => trans('admin::app.marketing.communications.campaigns.index.datagrid.edit'),
+                'icon' => 'icon-edit',
+                'title' => trans('admin::app.marketing.communications.campaigns.index.datagrid.edit'),
                 'method' => 'GET',
-                'url'    => function ($row) {
+                'url' => function ($row) {
                     return route('admin.marketing.communications.campaigns.edit', $row->id);
                 },
             ]);
@@ -97,10 +108,10 @@ class CampaignDataGrid extends DataGrid
 
         if (bouncer()->hasPermission('marketing.communications.campaigns.delete')) {
             $this->addAction([
-                'icon'         => 'icon-delete',
-                'title'        => trans('admin::app.marketing.communications.campaigns.index.datagrid.delete'),
-                'method'       => 'DELETE',
-                'url'          => function ($row) {
+                'icon' => 'icon-delete',
+                'title' => trans('admin::app.marketing.communications.campaigns.index.datagrid.delete'),
+                'method' => 'DELETE',
+                'url' => function ($row) {
                     return route('admin.marketing.communications.campaigns.delete', $row->id);
                 },
             ]);

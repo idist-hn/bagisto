@@ -1,8 +1,8 @@
-{!!view_render_event('bagisto.shop.categories.view.filters.before') !!}
+{!! view_render_event('bagisto.shop.categories.view.filters.before') !!}
 
-<!-- Desktop Filters Naviation -->
+<!-- Desktop Filters Navigation -->
 <div v-if="! isMobile">
-    <!-- Filters Vue Compoment -->
+    <!-- Filters Vue Component -->
     <v-filters
         @filter-applied="setFilters('filter', $event)"
         @filter-clear="clearFilters('filter', $event)"
@@ -12,7 +12,7 @@
     </v-filters>
 </div>
 
-<!-- Mobile Filters Naviation -->
+<!-- Mobile Filters Navigation -->
 <div
     class="fixed bottom-0 z-10 grid w-full max-w-full grid-cols-[1fr_auto_1fr] items-center justify-items-center border-t border-zinc-200 bg-white px-5 ltr:left-0 rtl:right-0"
     v-if="isMobile"
@@ -29,7 +29,7 @@
                 class="flex cursor-pointer items-center gap-x-2.5 px-2.5 py-3.5 text-base font-medium uppercase max-md:py-3"
                 @click="isDrawerActive.filter = true"
             >
-                <span class="icon-filter-1 text-2xl"></span>
+                <span class="icon-funnel text-2xl"></span>
 
                 @lang('shop::app.categories.filters.filter')
             </div>
@@ -43,7 +43,7 @@
                 </p>
 
                 <p
-                    class="cursor-pointer text-sm font-medium ltr:mr-[50px] rtl:ml-[50px]"
+                    class="cursor-pointer text-sm font-medium ltr:mr-12.5 rtl:ml-12.5"
                     @click="clearFilters('filter', '')"
                 >
                     @lang('shop::app.categories.filters.clear-all')
@@ -53,7 +53,7 @@
 
         <!-- Drawer Content -->
         <x-slot:content>
-            <!-- Filters Vue Compoment -->
+            <!-- Filters Vue Component -->
             <v-filters
                 @filter-applied="setFilters('filter', $event)"
                 @filter-clear="clearFilters('filter', $event)"
@@ -64,7 +64,7 @@
         </x-slot>
     </x-shop::drawer>
 
-    <!-- Seperator -->
+    <!-- Separator -->
     <span class="h-5 w-0.5 bg-zinc-200"></span>
 
     <!-- Sort Drawer -->
@@ -79,7 +79,7 @@
                 class="flex cursor-pointer items-center gap-x-2.5 px-2.5 py-3.5 text-base font-medium uppercase max-md:py-3"
                 @click="isDrawerActive.toolbar = true"
             >
-                <span class="icon-sort-1 text-2xl"></span>
+                <span class="icon-sort text-2xl"></span>
 
                 @lang('shop::app.categories.filters.sort')
             </div>
@@ -95,13 +95,13 @@
         </x-slot>
 
         <!-- Drawer Content -->
-        <x-slot:content class="!px-0">
+        <x-slot:content class="px-0!">
             @include('shop::categories.toolbar')
         </x-slot>
     </x-shop::drawer>
 </div>
 
-{!!view_render_event('bagisto.shop.categories.view.filters.after') !!}
+{!! view_render_event('bagisto.shop.categories.view.filters.after') !!}
 
 @pushOnce('scripts')
     <!-- Filters Vue template -->
@@ -116,9 +116,9 @@
 
         <!-- Filters Container -->
         <template v-else>
-            <div class="panel-side journal-scroll grid max-h-[1320px] min-w-[342px] grid-cols-[1fr] overflow-y-auto overflow-x-hidden max-xl:min-w-[270px] md:max-w-[400px] md:ltr:pr-7 md:rtl:pl-7">
+            <div class="panel-side journal-scroll grid max-h-330 min-w-85.5 grid-cols-[1fr] overflow-y-auto overflow-x-hidden max-xl:min-w-67.5 md:max-w-85.5 md:ltr:pr-7 md:rtl:pl-7">
                 <!-- Filters Header Container -->
-                <div class="flex h-[50px] items-center justify-between border-b border-zinc-200 pb-2.5 max-md:hidden">
+                <div class="flex h-12.5 items-center justify-between border-b border-zinc-200 pb-2.5 max-md:hidden">
                     <p class="text-lg font-semibold max-sm:font-medium">
                         @lang('shop::app.categories.filters.filters')
                     </p>
@@ -150,73 +150,160 @@
         type="text/x-template"
         id="v-filter-item-template"
     >
-        <template v-if="filter.type === 'price' || filter.options.length">
-            <x-shop::accordion class="last:border-b-0">
-                <!-- Filter Item Header -->
-                <x-slot:header class="px-0 py-2.5 max-sm:!pb-1.5">
-                    <div class="flex items-center justify-between">
-                        <p class="text-lg font-semibold max-sm:text-base max-sm:font-medium">
-                            @{{ filter.name }}
+        <x-shop::accordion class="last:border-b-0">
+            <!-- Filter Item Header -->
+            <x-slot:header class="px-0 py-2.5 max-sm:pb-1.5!">
+                <div class="flex items-center justify-between">
+                    <p class="text-lg font-semibold max-sm:text-base max-sm:font-medium">
+                        @{{ filter.name }}
+                    </p>
+                </div>
+            </x-slot>
+
+            <!-- Filter Item Content -->
+            <x-slot:content class="p-0!">
+                <!-- Price Range Filter -->
+                <ul v-if="filter.type === 'price'">
+                    <li>
+                        <v-price-filter
+                            :key="refreshKey"
+                            :default-price-range="appliedValues"
+                            :default-attribute-code="filter.code"
+                            @set-price-range="applyValue($event)"
+                        >
+                        </v-price-filter>
+                    </li>
+                </ul>
+
+                <!-- Checkbox Filter Options -->
+                <template v-else>
+                    <!-- Search Box For Options -->
+                    <div
+                        class="flex flex-col gap-1"
+                        v-if="filter.type !== 'boolean'"
+                    >
+                        <div class="relative">
+                            <div class="icon-search pointer-events-none absolute top-3 flex items-center text-2xl max-md:text-xl max-sm:top-2.5 ltr:left-3 rtl:right-3"></div>
+
+                            <input
+                                type="text"
+                                class="block w-full rounded-xl border border-zinc-200 px-11 py-3.5 text-sm font-medium text-gray-900 max-md:rounded-lg max-md:px-10 max-md:py-3 max-md:font-normal max-sm:text-xs"
+                                placeholder="@lang('shop::app.categories.filters.search.title')"
+                                v-model="searchQuery"
+                                v-debounce:500="searchOptions"
+                            />
+                        </div>
+
+                        <p
+                            class="mt-1 flex flex-row-reverse text-xs text-gray-600"
+                            v-text="
+                                '@lang('shop::app.categories.filters.search.results-info', ['currentCount' => 'currentCount', 'totalCount' => 'totalCount'])'
+                                    .replace('currentCount', options.length)
+                                    .replace('totalCount', meta.total)
+                            "
+                            v-if="meta && meta.total > 0"
+                        >
                         </p>
                     </div>
-                </x-slot>
 
-                <!-- Filter Item Content -->
-                <x-slot:content class="!p-0">
-                    <!-- Price Range Filter -->
-                    <ul v-if="filter.type === 'price'">
-                        <li>
-                            <v-price-filter
-                                :key="refreshKey"
-                                :default-price-range="appliedValues"
-                                @set-price-range="applyValue($event)"
+                    <!-- Filter Options -->
+                    <ul class="pb-3 text-base text-gray-700">
+                        <template v-if="options.length">
+                            <li
+                                :key="`${filter.id}_${option.id}`"
+                                v-for="(option, optionIndex) in options"
                             >
-                            </v-price-filter>
-                        </li>
-                    </ul>
+                                <div class="flex relative select-none items-center gap-x-4 rounded-sm hover:bg-gray-100 max-sm:gap-x-1 max-sm:p-0! ltr:pl-2 rtl:pr-2">
+                                    <input
+                                        type="checkbox"
+                                        :id="`filter_${filter.id}_option_${option.id}`"
+                                        class="peer sr-only"
+                                        :value="option.id"
+                                        v-model="appliedValues"
+                                        @change="applyValue"
+                                    />
 
-                    <!-- Checkbox Filter Options -->
-                    <ul class="pb-3 text-base text-gray-700" v-else>
-                        <li
-                            :key="option.id"
-                            v-for="(option, optionIndex) in filter.options"
-                        >
-                            <div class="flex select-none items-center gap-x-4 rounded hover:bg-gray-100 max-sm:gap-x-1 max-sm:!p-0 ltr:pl-2 rtl:pr-2">
-                                <input
-                                    type="checkbox"
-                                    :id="'option_' + option.id"
-                                    class="peer hidden"
-                                    :value="option.id"
-                                    v-model="appliedValues"
-                                    @change="applyValue"
-                                />
+                                    <label
+                                        class="icon-uncheck peer-checked:icon-check-box cursor-pointer text-2xl text-navyBlue peer-checked:text-navyBlue max-sm:text-xl peer-focus-visible:ring-2 peer-focus-visible:ring-navyBlue peer-focus-visible:ring-offset-2 rounded"
+                                        :for="`filter_${filter.id}_option_${option.id}`"
+                                    >
+                                    </label>
 
-                                <label
-                                    class="icon-uncheck peer-checked:icon-check-box cursor-pointer text-2xl text-navyBlue peer-checked:text-navyBlue max-sm:text-xl"
-                                    role="checkbox"
-                                    aria-checked="false"
-                                    :aria-label="option.name"
-                                    :aria-labelledby="'label_option_' + option.id"
-                                    tabindex="0"
-                                    :for="'option_' + option.id"
-                                >
-                                </label>
+                                    <label
+                                        class="w-full cursor-pointer p-2 text-base text-gray-900 max-sm:p-1 max-sm:text-sm ltr:pl-0 rtl:pr-0"
+                                        :for="`filter_${filter.id}_option_${option.id}`"
+                                    >
+                                        @{{ option.name }}
+                                    </label>
+                                </div>
+                            </li>
+                        </template>
 
-                                <label
-                                    class="w-full cursor-pointer p-2 text-base text-gray-900 max-sm:p-1 max-sm:text-sm ltr:pl-0 rtl:pr-0"
-                                    :id="'label_option_' + option.id"
-                                    :for="'option_' + option.id"
-                                    role="button"
-                                    tabindex="0"
-                                >
-                                    @{{ option.name }}
-                                </label>
+                        <template v-else>
+                            <li
+                                class="flex flex-col items-center justify-center gap-2 py-2"
+                                v-if="! isLoadingMore"
+                            >
+                                @lang('shop::app.categories.filters.search.no-options-available')
+                            </li>
+
+                            <div
+                                class="mt-2"
+                                v-else
+                            >
+                                <div class="flex flex-col items-center justify-between">
+                                    <div class="shimmer h-5 w-[50%] self-end rounded-sm"></div>
+                                </div>
+
+                                <div class="z-10 grid gap-1 rounded-lg bg-white">
+                                    <div class="flex items-center gap-x-4 ltr:pl-2 rtl:pr-2">
+                                        <div class="shimmer h-5 w-5 rounded-sm"></div>
+
+                                        <div class="p-2 ltr:pl-0 rtl:pr-0">
+                                            <div class="shimmer h-5 w-25"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-x-4 rounded-sm ltr:pl-2 rtl:pr-2">
+                                        <div class="shimmer h-5 w-5 rounded-sm"></div>
+
+                                        <div class="p-2 ltr:pl-0 rtl:pr-0">
+                                            <div class="shimmer h-5 w-25"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-x-4 rounded-sm ltr:pl-2 rtl:pr-2">
+                                        <div class="shimmer h-5 w-5 rounded-sm"></div>
+
+                                        <div class="p-2 ltr:pl-0 rtl:pr-0">
+                                            <div class="shimmer h-5 w-25"></div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </li>
+                        </template>
                     </ul>
-                </x-slot>
-            </x-shop::accordion>
-        </template>
+
+                    <!-- Load More Button -->
+                    <div class="flex justify-center pb-3" v-if="meta && meta.current_page < meta.last_page">
+                        <button
+                            type="button"
+                            class="rounded-sm border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            @click="loadMoreOptions"
+                            :disabled="isLoadingMore"
+                        >
+                            <span v-if="isLoadingMore">
+                                @lang('shop::app.categories.filters.search.loading')
+                            </span>
+
+                            <span v-else>
+                                @lang('shop::app.categories.filters.search.load-more')
+                            </span>
+                        </button>
+                    </div>
+                </template>
+            </x-slot>
+        </x-shop::accordion>
     </script>
 
     <script
@@ -224,7 +311,7 @@
         id="v-price-filter-template"
     >
         <div>
-            <!-- Price range filter shimmer -->
+            <!-- Price Range Filter Shimmer -->
             <template v-if="isLoading">
                 <x-shop::shimmer.range-slider />
             </template>
@@ -267,7 +354,7 @@
             methods: {
                 getFilters() {
                     this.$axios.get('{{ route("shop.api.categories.attributes") }}', {
-                            params: { 
+                            params: {
                                 category_id: "{{ isset($category) ? $category->id : ''  }}",
                             }
                         })
@@ -316,7 +403,7 @@
                      * Clearing child components. Improvisation needed here.
                      */
                     this.$refs.filterItemComponent.forEach((filterItem) => {
-                        if (filterItem.filter.code === 'price') {
+                        if (filterItem.filter.type === 'price') {
                             filterItem.$data.appliedValues = null;
                         } else {
                             filterItem.$data.appliedValues = [];
@@ -335,43 +422,53 @@
 
             data() {
                 return {
-                    active: true,
+                    options: [],
+
+                    meta: null,
 
                     appliedValues: null,
+
+                    currentPage: 1,
+
+                    searchQuery: '',
+
+                    isLoadingMore: true,
 
                     refreshKey: 0,
                 }
             },
 
-            watch: {
-                appliedValues() {
-                    if (this.filter.code === 'price' && ! this.appliedValues) {
-                        ++this.refreshKey;
-                    }
-                },
+            created() {
+                // Initialize values in created hook
+                if (this.filter.type === 'price') {
+                    this.appliedValues = this.$parent.$data.filters.applied[this.filter.code]?.join(',');
+                } else {
+                    this.appliedValues = this.$parent.$data.filters.applied[this.filter.code] ?? [];
+                }
             },
 
             mounted() {
-                if (this.filter.code === 'price') {
-                    /**
-                     * Improvisation needed here for `this.$parent.$data`.
-                     */
-                    this.appliedValues = this.$parent.$data.filters.applied[this.filter.code]?.join(',');
-
-                    ++this.refreshKey;
-
-                    return;
-                }
-
-                /**
-                 * Improvisation needed here for `this.$parent.$data`.
-                 */
-                this.appliedValues = this.$parent.$data.filters.applied[this.filter.code] ?? [];
+                this.fetchFilterOptions();
             },
+
+            watch: {
+                appliedValues: {
+                    handler(newVal, oldVal) {
+                        if (
+                            this.filter.type === 'price' &&
+                            newVal !== oldVal &&
+                            !newVal
+                        ) {
+                            this.refreshKey++;
+                        }
+                    }
+                }
+            },
+
 
             methods: {
                 applyValue($event) {
-                    if (this.filter.code === 'price') {
+                    if (this.filter.type === 'price') {
                         this.appliedValues = $event;
 
                         this.$emit('values-applied', this.appliedValues);
@@ -381,38 +478,85 @@
 
                     this.$emit('values-applied', this.appliedValues);
                 },
+
+                /**
+                 * Search options based on query
+                 */
+                searchOptions() {
+                    this.currentPage = 1;
+
+                    this.fetchFilterOptions(true);
+                },
+
+                /**
+                 * Load more options when "Load more" button is clicked
+                 */
+                loadMoreOptions() {
+                    this.currentPage++;
+
+                    this.fetchFilterOptions(false);
+                },
+
+                fetchFilterOptions(replace = true) {
+                    this.isLoadingMore = true;
+
+                    const url = `{{ route("shop.api.categories.attribute_options", 'attribute_id') }}`.replace('attribute_id', this.filter.id);
+
+                    this.$axios.get(url, {
+                        params: {
+                            page: this.currentPage,
+                            search: this.searchQuery,
+                        }
+                    })
+                    .then(response => {
+                        this.isLoadingMore = false;
+
+                        this.options = replace
+                            ? response.data.data
+                            : [...this.options, ...response.data.data];
+
+                        this.meta = response.data.meta;
+                    })
+                    .catch(error => {
+                        this.isLoadingMore = false;
+                    });
+                },
             },
         });
 
         app.component('v-price-filter', {
             template: '#v-price-filter-template',
 
-            props: ['defaultPriceRange'],
+            props: ['defaultPriceRange', 'defaultAttributeCode'],
 
             data() {
                 return {
                     refreshKey: 0,
-
                     isLoading: true,
-
                     allowedMaxPrice: 100,
-
-                    priceRange: this.defaultPriceRange ?? [0, 100].join(','),
+                    priceRange: null,
                 };
             },
 
             computed: {
                 minRange() {
-                    let priceRange = this.priceRange.split(',');
-
+                    let priceRange = (this.priceRange || '0,100').split(',');
                     return priceRange[0];
                 },
 
                 maxRange() {
-                    let priceRange = this.priceRange.split(',');
-
+                    let priceRange = (this.priceRange || '0,100').split(',');
                     return priceRange[1];
                 }
+            },
+
+            created() {
+                // Initialize price range in created hook
+                let defaultRange = Array.isArray(this.defaultPriceRange)
+                    ? this.defaultPriceRange.join(',')
+                    : this.defaultPriceRange;
+
+                this.priceRange = defaultRange || [0, 100].join(',');
             },
 
             mounted() {
@@ -421,7 +565,11 @@
 
             methods: {
                 getMaxPrice() {
-                    this.$axios.get('{{ route("shop.api.categories.max_price", $category->id ?? '') }}')
+                    this.$axios.get('{{ route("shop.api.categories.max_price", isset($category) && $category->id ? $category->id : null) }}', {
+                            params: {
+                                attribute_code: this.defaultAttributeCode || 'price',
+                            }
+                        })
                         .then((response) => {
                             this.isLoading = false;
 

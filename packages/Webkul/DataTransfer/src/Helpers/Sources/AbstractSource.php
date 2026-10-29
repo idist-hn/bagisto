@@ -7,37 +7,73 @@ use Webkul\DataTransfer\Helpers\Importers\AbstractImporter;
 abstract class AbstractSource
 {
     /**
-     * Column names
+     * Reader.
+     */
+    protected mixed $reader;
+
+    /**
+     * Column names.
      */
     protected array $columnNames = [];
 
     /**
-     * Quantity of columns
+     * Quantity of columns.
      */
     protected int $totalColumns = 0;
 
     /**
-     * Current row
+     * Current row.
      */
     protected array $currentRowData = [];
 
     /**
-     * Current row number
+     * Current row number.
      */
     protected int $currentRowNumber = -1;
 
     /**
-     * Flag to indicate that wrong quote was found
+     * Flag to indicate that wrong quote was found.
      */
     protected bool $foundWrongQuoteFlag = false;
 
     /**
-     * Read next line from source
+     * Initialize reader.
+     */
+    abstract protected function initialize(): void;
+
+    /**
+     * Read next line from source.
      */
     abstract protected function getNextRow(): array|bool;
 
     /**
-     * Return the key of the current row
+     * Generate error report.
+     */
+    abstract public function generateErrorReport(array $errors): string;
+
+    /**
+     * Create a new helper instance.
+     *
+     * @return void
+     */
+    public function __construct(
+        protected string $filePath,
+        protected string $delimiter = ','
+    ) {
+        try {
+            $this->initialize();
+        } catch (\Throwable $e) {
+            /**
+             * Caught as a `Throwable` rather than an `Exception`: a file that is empty or is not
+             * of the shape the reader expects fails on a type error, which is not an `Exception`
+             * and would otherwise escape as-is.
+             */
+            throw new \LogicException("Unable to open file: '{$filePath}'", 0, $e);
+        }
+    }
+
+    /**
+     * Return the key of the current row.
      */
     public function getCurrentRowNumber(): int
     {
@@ -45,7 +81,7 @@ abstract class AbstractSource
     }
 
     /**
-     * Checks if current position is valid
+     * Checks if current position is valid.
      */
     public function valid(): bool
     {
@@ -53,7 +89,7 @@ abstract class AbstractSource
     }
 
     /**
-     * Read next line from source
+     * Read next line from source.
      */
     public function current(): array
     {
@@ -71,7 +107,7 @@ abstract class AbstractSource
     }
 
     /**
-     * Read next line from source
+     * Read next line from source.
      */
     public function next(): void
     {
@@ -89,7 +125,7 @@ abstract class AbstractSource
     }
 
     /**
-     * Rewind the iterator to the first row
+     * Rewind the iterator to the first row.
      */
     public function rewind(): void
     {
@@ -103,7 +139,31 @@ abstract class AbstractSource
     }
 
     /**
-     * Column names getter.
+     * Set reader.
+     */
+    public function setReader(mixed $reader): void
+    {
+        $this->reader = $reader;
+    }
+
+    /**
+     * Get reader.
+     */
+    public function getReader(): mixed
+    {
+        return $this->reader;
+    }
+
+    /**
+     * Set column names.
+     */
+    public function setColumnNames(array $columnNames): void
+    {
+        $this->columnNames = $columnNames;
+    }
+
+    /**
+     * Get column names.
      */
     public function getColumnNames(): array
     {
@@ -111,10 +171,28 @@ abstract class AbstractSource
     }
 
     /**
-     * Column names getter.
+     * Set total columns count.
+     */
+    public function setTotalColumns(int $totalColumns): void
+    {
+        $this->totalColumns = $totalColumns;
+    }
+
+    /**
+     * Total columns count.
      */
     public function getTotalColumns(): int
     {
-        return $this->columnNames;
+        return $this->totalColumns;
+    }
+
+    /**
+     * Error file path.
+     */
+    public function errorFilePath(): string
+    {
+        $fileType = pathinfo($this->filePath, PATHINFO_EXTENSION);
+
+        return 'imports/'.time().'-error-report.'.$fileType;
     }
 }

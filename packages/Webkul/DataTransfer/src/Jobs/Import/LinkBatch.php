@@ -9,10 +9,11 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Webkul\DataTransfer\Helpers\Import as ImportHelper;
+use Webkul\DataTransfer\Jobs\Concerns\RetriesOnDeadlock;
 
 class LinkBatch implements ShouldQueue
 {
-    use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Batchable, Dispatchable, InteractsWithQueue, Queueable, RetriesOnDeadlock, SerializesModels;
 
     /**
      * Create a new job instance.
@@ -36,6 +37,10 @@ class LinkBatch implements ShouldQueue
             ->setImport($this->importBatch->import)
             ->getTypeImporter();
 
-        $typeImported->linkBatch($this->importBatch);
+        try {
+            $this->retryOnDeadlock(fn () => $typeImported->linkBatch($this->importBatch));
+        } finally {
+            $typeImported->releaseBatchMemory();
+        }
     }
 }

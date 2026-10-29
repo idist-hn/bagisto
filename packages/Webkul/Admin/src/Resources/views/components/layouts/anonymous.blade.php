@@ -31,9 +31,9 @@
         name="base-url"
         content="{{ url()->to('/') }}"
     >
-    <meta
-        name="currency-code"
-        content="{{ core()->getCurrentCurrencyCode() }}"
+    <meta 
+        name="generator" 
+        content="Bagisto"
     >
 
     @stack('meta')
@@ -56,7 +56,7 @@
             href="{{ Storage::url($favicon) }}"
             rel="shortcut icon"
             sizes="16x16"
-        >
+        />
     @else
         <link
             type="image/x-icon"
@@ -78,6 +78,7 @@
 <body>
     {!! view_render_event('bagisto.admin.layout.body.before') !!}
 
+    <!-- Built With Bagisto -->
     <div id="app">
         <!-- Flash Message Blade Component -->
         <x-admin::flash-group />

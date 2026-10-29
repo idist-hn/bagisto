@@ -16,15 +16,16 @@
 
         <!-- Total Sales Section -->
         <template v-else>
-            <div class="box-shadow rounded">
+            <div class="box-shadow rounded-sm">
                 <div class="flex flex-wrap gap-4 border-b bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
                     <!-- Today's Sales -->
-                    <div class="flex flex-1 gap-2.5">
-                        <img
-                            class="h-[60px] max-h-[60px] w-full max-w-[60px] dark:mix-blend-exclusion dark:invert"
-                            src="{{ bagisto_asset('images/total-sales.svg')}}"
-                            title="@lang('admin::app.dashboard.index.today-sales')"
-                        >
+                    <div class="flex min-w-50 flex-1 gap-2.5">
+                        <div class="h-15 max-h-15 w-full max-w-15 dark:mix-blend-exclusion dark:invert">
+                            <img
+                                src="{{ bagisto_asset('images/total-sales.svg')}}"
+                                title="@lang('admin::app.dashboard.index.today-sales')"
+                            >
+                        </div>
 
                         <!-- Sales Stats -->
                         <div class="grid place-content-start gap-1">
@@ -40,7 +41,7 @@
                             <div class="flex items-center gap-0.5">
                                 <span
                                     class="text-base text-emerald-500"
-                                    :class="[report.statistics.total_sales.progress < 0 ? 'icon-down-stat text-red-500 dark:!text-red-500' : 'icon-up-stat text-emerald-500 dark:!text-emerald-500']"
+                                    :class="[report.statistics.total_sales.progress < 0 ? 'icon-down-stat text-red-500 dark:text-red-500!' : 'icon-up-stat text-emerald-500 dark:text-emerald-500!']"
                                 ></span>
 
                                 <p
@@ -54,12 +55,13 @@
                     </div>
 
                     <!-- Today's Orders -->
-                    <div class="flex flex-1 gap-2.5">
-                        <img
-                            class="h-[60px] max-h-[60px] w-full max-w-[60px] dark:mix-blend-exclusion dark:invert"
-                            src="{{ bagisto_asset('images/total-orders.svg')}}"
-                            title="@lang('admin::app.dashboard.index.today-orders')"
-                        >
+                    <div class="flex min-w-50 flex-1 gap-2.5">
+                        <div class="h-15 max-h-15 w-full max-w-15 dark:mix-blend-exclusion dark:invert">
+                            <img
+                                src="{{ bagisto_asset('images/total-orders.svg')}}"
+                                title="@lang('admin::app.dashboard.index.today-orders')"
+                            >
+                        </div>
 
                         <!-- Orders Stats -->
                         <div class="grid place-content-start gap-1">
@@ -75,7 +77,7 @@
                             <div class="flex items-center gap-0.5">
                                 <span
                                     class="text-base text-emerald-500"
-                                    :class="[report.statistics.total_orders.progress < 0 ? 'icon-down-stat text-red-500 dark:!text-red-500' : 'icon-up-stat text-emerald-500 dark:!text-emerald-500']"
+                                    :class="[report.statistics.total_orders.progress < 0 ? 'icon-down-stat text-red-500 dark:text-red-500!' : 'icon-up-stat text-emerald-500 dark:text-emerald-500!']"
                                 ></span>
 
                                 <p
@@ -89,12 +91,13 @@
                     </div>
 
                     <!-- Today's Customers -->
-                    <div class="flex flex-1 gap-2.5">
-                        <img
-                            class="h-[60px] max-h-[60px] w-full max-w-[60px] dark:mix-blend-exclusion dark:invert"
-                            src="{{ bagisto_asset('images/customers.svg')}}"
-                            title="@lang('admin::app.dashboard.index.today-customers')"
-                        >
+                    <div class="flex min-w-50 flex-1 gap-2.5">
+                        <div class="h-15 max-h-15 w-full max-w-15 dark:mix-blend-exclusion dark:invert">
+                            <img
+                                src="{{ bagisto_asset('images/customers.svg')}}"
+                                title="@lang('admin::app.dashboard.index.today-customers')"
+                            >
+                        </div>
 
                         <!-- Customers Stats -->
                         <div class="grid place-content-start gap-1">
@@ -110,7 +113,7 @@
                             <div class="flex items-center gap-0.5">
                                 <span
                                     class="text-base text-emerald-500"
-                                    :class="[report.statistics.total_customers.progress < 0 ? 'icon-down-stat text-red-500 dark:!text-red-500' : 'icon-up-stat text-emerald-500 dark:!text-emerald-500']"
+                                    :class="[report.statistics.total_customers.progress < 0 ? 'icon-down-stat text-red-500 dark:text-red-500!' : 'icon-up-stat text-emerald-500 dark:text-emerald-500!']"
                                 ></span>
 
                                 <p
@@ -131,7 +134,7 @@
                 >
                     <div class="flex flex-wrap gap-4">
                         <!-- Total Sales -->
-                        <div class="flex min-w-[180px] flex-1 gap-2.5">
+                        <div class="flex min-w-45 flex-1 gap-2.5">
                             <div class="flex flex-col gap-1.5">
                                 <!-- Order Id -->
                                 <p class="text-base font-semibold leading-none text-gray-800 dark:text-white">
@@ -149,7 +152,7 @@
                             </div>
                         </div>
 
-                        <div class="flex min-w-[180px] flex-1 gap-2.5">
+                        <div class="flex min-w-45 flex-1 gap-2.5">
                             <div class="flex flex-col gap-1.5">
                                 <p class="text-base font-semibold leading-none text-gray-800 dark:text-white">
                                     @{{ order.formatted_base_grand_total }}
@@ -167,14 +170,14 @@
                             </div>
                         </div>
 
-                        <div class="flex min-w-[200px] flex-1 gap-2.5">
+                        <div class="flex min-w-50 flex-1 gap-2.5">
                             <div class="flex flex-col gap-1.5">
                             <!-- Customer Details -->
                                 <p class="text-base text-gray-800 dark:text-white">
                                     @{{ order.customer_name }}
                                 </p>
         
-                                <p class="max-w-[180px] break-words text-gray-600 dark:text-gray-300">
+                                <p class="max-w-45 wrap-break-word text-gray-600 dark:text-gray-300">
                                     @{{ order.customer_email }}
                                 </p>
         
@@ -185,7 +188,7 @@
                             </div>
                         </div>
  
-                        <div class="flex min-w-[180px] flex-1 items-center justify-between gap-2.5">
+                        <div class="flex min-w-45 flex-1 items-center justify-between gap-2.5">
                             <div class="flex flex-col gap-1.5">
                                 <!-- Ordered Product Images -->
                                 <div
@@ -225,15 +228,15 @@
             },
 
             methods: {
-                getStats(filtets) {
+                getStats(filters) {
                     this.isLoading = true;
 
-                    var filtets = Object.assign({}, filtets);
+                    var filters = Object.assign({}, filters);
 
-                    filtets.type = 'today';
+                    filters.type = 'today';
 
                     this.$axios.get("{{ route('admin.dashboard.stats') }}", {
-                            params: filtets
+                            params: filters
                         })
                         .then(response => {
                             this.report = response.data;

@@ -11,8 +11,9 @@ use Webkul\Shop\Http\Controllers\API\OnepageController;
 use Webkul\Shop\Http\Controllers\API\ProductController;
 use Webkul\Shop\Http\Controllers\API\ReviewController;
 use Webkul\Shop\Http\Controllers\API\WishlistController;
+use Webkul\Shop\Http\Middleware\PreviewImageTheme;
 
-Route::group(['middleware' => ['locale', 'theme', 'currency'], 'prefix' => 'api'], function () {
+Route::group(['prefix' => 'api'], function () {
     Route::controller(CoreController::class)->prefix('core')->group(function () {
         Route::get('countries', 'getCountries')->name('shop.api.core.countries');
 
@@ -20,29 +21,39 @@ Route::group(['middleware' => ['locale', 'theme', 'currency'], 'prefix' => 'api'
     });
 
     Route::controller(CategoryController::class)->prefix('categories')->group(function () {
-        Route::get('', 'index')->name('shop.api.categories.index');
+        Route::get('', 'index')
+            ->middleware(PreviewImageTheme::class)
+            ->name('shop.api.categories.index');
 
         Route::get('tree', 'tree')->name('shop.api.categories.tree');
 
         Route::get('attributes', 'getAttributes')->name('shop.api.categories.attributes');
 
+        Route::get('attributes/{attribute_id}/options', 'getAttributeOptions')->name('shop.api.categories.attribute_options');
+
         Route::get('max-price/{id?}', 'getProductMaxPrice')->name('shop.api.categories.max_price');
     });
 
     Route::controller(ProductController::class)->prefix('products')->group(function () {
-        Route::get('', 'index')->name('shop.api.products.index');
+        Route::get('', 'index')
+            ->middleware(PreviewImageTheme::class)
+            ->name('shop.api.products.index');
 
         Route::get('{id}/related', 'relatedProducts')->name('shop.api.products.related.index');
 
-        Route::get('{id}/up-sell', 'upSellProducts')->name('shop.api.products.up-sell.index');
+        Route::get('{id}/up-sell', 'upSellProducts')->name('shop.api.products.up_sell.index');
     });
 
     Route::controller(ReviewController::class)->prefix('product/{id}')->group(function () {
         Route::get('reviews', 'index')->name('shop.api.products.reviews.index');
 
-        Route::post('review', 'store')->name('shop.api.products.reviews.store');
+        Route::post('review', 'store')
+            ->middleware('throttle:10,1')
+            ->name('shop.api.products.reviews.store');
 
-        Route::get('reviews/{review_id}/translate', 'translate')->name('shop.api.products.reviews.translate');
+        Route::get('reviews/{review_id}/translate', 'translate')
+            ->middleware('throttle:10,1')
+            ->name('shop.api.products.reviews.translate');
     });
 
     Route::controller(CompareController::class)->prefix('compare-items')->group(function () {
@@ -68,13 +79,15 @@ Route::group(['middleware' => ['locale', 'theme', 'currency'], 'prefix' => 'api'
 
         Route::post('move-to-wishlist', 'moveToWishlist')->name('shop.api.checkout.cart.move_to_wishlist');
 
-        Route::post('coupon', 'storeCoupon')->name('shop.api.checkout.cart.coupon.apply');
+        Route::post('coupon', 'storeCoupon')
+            ->middleware('throttle:10,1')
+            ->name('shop.api.checkout.cart.coupon.apply');
 
         Route::post('estimate-shipping-methods', 'estimateShippingMethods')->name('shop.api.checkout.cart.estimate_shipping');
 
         Route::delete('coupon', 'destroyCoupon')->name('shop.api.checkout.cart.coupon.remove');
 
-        Route::get('cross-sell', 'crossSellProducts')->name('shop.api.checkout.cart.cross-sell.index');
+        Route::get('cross-sell', 'crossSellProducts')->name('shop.api.checkout.cart.cross_sell.index');
     });
 
     Route::controller(OnepageController::class)->prefix('checkout/onepage')->group(function () {
@@ -97,7 +110,6 @@ Route::group(['middleware' => ['locale', 'theme', 'currency'], 'prefix' => 'api'
     });
 
     Route::group(['middleware' => ['customer'], 'prefix' => 'customer'], function () {
-
         Route::controller(AddressController::class)->prefix('addresses')->group(function () {
             Route::get('', 'index')->name('shop.api.customers.account.addresses.index');
 

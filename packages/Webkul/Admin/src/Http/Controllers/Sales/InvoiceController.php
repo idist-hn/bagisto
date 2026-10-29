@@ -2,13 +2,21 @@
 
 namespace Webkul\Admin\Http\Controllers\Sales;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 use Webkul\Admin\DataGrids\Sales\OrderInvoiceDataGrid;
 use Webkul\Admin\Http\Controllers\Controller;
+use Webkul\Admin\Http\Requests\MassUpdateRequest;
 use Webkul\Core\Traits\PDFHandler;
+use Webkul\Sales\Models\Invoice;
 use Webkul\Sales\Repositories\InvoiceRepository;
 use Webkul\Sales\Repositories\OrderRepository;
+use Webkul\Sales\Repositories\OrderTransactionRepository;
 
 class InvoiceController extends Controller
 {
@@ -21,13 +29,14 @@ class InvoiceController extends Controller
      */
     public function __construct(
         protected OrderRepository $orderRepository,
+        protected OrderTransactionRepository $orderTransactionRepository,
         protected InvoiceRepository $invoiceRepository,
     ) {}
 
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function index()
     {
@@ -41,7 +50,7 @@ class InvoiceController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function create(int $orderId)
     {
@@ -55,9 +64,9 @@ class InvoiceController extends Controller
     }
 
     /**
-     * (Store) a newly created resource in storage.
+     * Store a newly created resource in storage.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(int $orderId)
     {
@@ -70,9 +79,15 @@ class InvoiceController extends Controller
         }
 
         $this->validate(request(), [
-            'invoice.items'   => 'required|array',
+            'invoice.items' => 'required|array',
             'invoice.items.*' => 'required|numeric|min:0',
         ]);
+
+        if (! $order->ownsItems(array_keys((array) request()->input('invoice.items', [])))) {
+            session()->flash('error', trans('admin::app.sales.invoices.create.product-error'));
+
+            return redirect()->back();
+        }
 
         if (! $this->invoiceRepository->haveProductToInvoice(request()->all())) {
             session()->flash('error', trans('admin::app.sales.invoices.create.product-error'));
@@ -86,9 +101,15 @@ class InvoiceController extends Controller
             return redirect()->back();
         }
 
-        $this->invoiceRepository->create(array_merge(request()->all(), [
-            'order_id' => $orderId,
-        ]));
+        DB::transaction(function () use ($orderId) {
+            $invoice = $this->invoiceRepository->create(array_merge(request()->all(), [
+                'order_id' => $orderId,
+            ]));
+
+            if (request()->boolean('can_create_transaction')) {
+                $this->orderTransactionRepository->createForInvoice($invoice);
+            }
+        });
 
         session()->flash('success', trans('admin::app.sales.invoices.create.create-success'));
 
@@ -98,7 +119,7 @@ class InvoiceController extends Controller
     /**
      * Show the view for the specified resource.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function view(int $id)
     {
@@ -110,7 +131,7 @@ class InvoiceController extends Controller
     /**
      * Send duplicate invoice.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function sendDuplicateEmail(Request $request, int $id)
     {
@@ -120,9 +141,10 @@ class InvoiceController extends Controller
 
         $invoice = $this->invoiceRepository->findOrFail($id);
 
-        $invoice->email = request()->input('email');
-
-        Event::dispatch('sales.invoice.send_duplicate_email', $invoice);
+        Event::dispatch('sales.invoice.send_duplicate_email', [
+            'invoice' => $invoice,
+            'duplicate_invoice_email' => request()->input('email'),
+        ]);
 
         session()->flash('success', trans('admin::app.sales.invoices.view.invoice-sent'));
 
@@ -132,15 +154,47 @@ class InvoiceController extends Controller
     /**
      * Print and download the for the specified resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function printInvoice(int $id)
     {
         $invoice = $this->invoiceRepository->findOrFail($id);
 
+        $orderCurrencyCode = $invoice->order->order_currency_code;
+
         return $this->downloadPDF(
-            view('admin::sales.invoices.pdf', compact('invoice'))->render(),
+            view('shop::customers.account.orders.pdf', compact('invoice', 'orderCurrencyCode'))->render(),
             'invoice-'.$invoice->created_at->format('d-m-Y')
         );
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @return Response
+     */
+    public function massUpdateState(MassUpdateRequest $massUpdateRequest)
+    {
+        $massUpdateRequest->validate([
+            'value' => [Rule::in([
+                Invoice::STATUS_PENDING,
+                Invoice::STATUS_PAID,
+                Invoice::STATUS_OVERDUE,
+            ])],
+        ]);
+
+        $invoiceIds = $massUpdateRequest->input('indices');
+
+        $invoices = $this->invoiceRepository->findWhereIn('id', $invoiceIds);
+
+        foreach ($invoices as $invoice) {
+            $invoice->state = $massUpdateRequest->input('value');
+
+            $invoice->save();
+        }
+
+        return new JsonResponse([
+            'message' => trans('admin::app.sales.invoices.index.datagrid.mass-update-success'),
+        ], 200);
     }
 }

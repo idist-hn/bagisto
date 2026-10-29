@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from "vite";
 import laravel from "laravel-vite-plugin";
+import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
 export default defineConfig(({ mode }) => {
@@ -17,9 +18,12 @@ export default defineConfig(({ mode }) => {
         server: {
             host: process.env.VITE_HOST || "localhost",
             port: process.env.VITE_PORT || 5173,
+            cors: true,
         },
 
         plugins: [
+            tailwindcss(),
+
             laravel({
                 hotFile: "../../../public/installer-default-vite.hot",
                 publicDirectory: "../../../public",

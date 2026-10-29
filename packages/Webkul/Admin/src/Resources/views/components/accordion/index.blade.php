@@ -7,7 +7,7 @@
         is-active="{{ $isActive }}"
         {{ $attributes }}
     >
-        <x-admin::shimmer.accordion class="h-[271px] w-[360px]" />
+        <x-admin::shimmer.accordion class="h-67.75 w-90" />
 
         @isset($header)
             <template v-slot:header="{ toggle, isOpen }">
@@ -15,7 +15,8 @@
                     {{ $header }}
 
                     <span
-                        :class="`cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-100 dark:hover:bg-gray-950 ${isOpen ? 'icon-arrow-up' : 'icon-arrow-down'}`"
+                        class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-100 dark:hover:bg-gray-950"
+                        :class="[isOpen ? 'icon-arrow-up' : 'icon-arrow-down']"
                         @click="toggle"
                     ></span>
                 </div>

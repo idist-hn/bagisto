@@ -2,13 +2,19 @@
 
 namespace Webkul\Shop\Http\Controllers\Customer\Account;
 
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\View\View;
+use Webkul\Sales\Contracts\DownloadableLinkPurchased;
 use Webkul\Sales\Repositories\DownloadableLinkPurchasedRepository;
 use Webkul\Shop\DataGrids\DownloadableProductDataGrid;
 use Webkul\Shop\Http\Controllers\Controller;
+use Webkul\Shop\Traits\ValidatesExternalUrl;
 
 class DownloadableProductController extends Controller
 {
+    use ValidatesExternalUrl;
+
     /**
      * Create a new controller instance.
      *
@@ -19,7 +25,7 @@ class DownloadableProductController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function index()
     {
@@ -27,78 +33,74 @@ class DownloadableProductController extends Controller
             return datagrid(DownloadableProductDataGrid::class)->process();
         }
 
-        return view('shop::customers.account.downloadable_products.index');
+        return view('shop::customers.account.downloadable-products.index');
     }
 
     /**
-     * Download the for the specified resource.
+     * Serve the file or url a purchased downloadable link points to, spending one download.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function download($id)
     {
         $downloadableLinkPurchased = $this->downloadableLinkPurchasedRepository->findOneByField([
-            'id'          => $id,
+            'id' => $id,
             'customer_id' => auth()->guard('customer')->user()->id,
         ]);
 
+        if (! $downloadableLinkPurchased) {
+            abort(404);
+        }
+
         if ($downloadableLinkPurchased->status == 'pending') {
-            abort(403);
+            abort(404);
         }
 
-        $totalInvoiceQty = 0;
+        abort_unless($this->isDeliverable($downloadableLinkPurchased), 404);
 
-        if (isset($downloadableLinkPurchased->order->invoices)) {
-            foreach ($downloadableLinkPurchased->order->invoices as $invoice) {
-                $totalInvoiceQty = $totalInvoiceQty + $invoice->total_qty;
-            }
-        }
-
-        $orderedQty = $downloadableLinkPurchased->order->total_qty_ordered;
-        $totalInvoiceQty = $totalInvoiceQty * ($downloadableLinkPurchased->download_bought / $orderedQty);
-
-        if (
-            $downloadableLinkPurchased->download_used == $totalInvoiceQty
-            || $downloadableLinkPurchased->download_used > $totalInvoiceQty
-        ) {
+        if (! $this->downloadableLinkPurchasedRepository->consumeDownload($downloadableLinkPurchased->id)) {
             session()->flash('warning', trans('shop::app.customers.account.downloadable-products.download-error'));
 
             return redirect()->route('shop.customers.account.downloadable_products.index');
         }
 
-        if (
-            $downloadableLinkPurchased->download_bought
-            && ($downloadableLinkPurchased->download_bought - ($downloadableLinkPurchased->download_used + $downloadableLinkPurchased->download_canceled)) <= 0
-        ) {
-            session()->flash('warning', trans('shop::app.customers.account.downloadable-products.download-error'));
+        return $this->serveLink($downloadableLinkPurchased);
+    }
 
-            return redirect()->route('shop.customers.account.downloadable_products.index');
+    /**
+     * Can the purchased link be delivered at all? Answered before a download is spent, so a
+     * missing file or a refused url does not cost the customer one of the downloads they bought.
+     *
+     * @param  DownloadableLinkPurchased  $purchasedLink
+     */
+    protected function isDeliverable($purchasedLink): bool
+    {
+        if ($purchasedLink->type == 'file') {
+            return Storage::disk('private')->exists($purchasedLink->file);
         }
 
-        $remainingDownloads = $downloadableLinkPurchased->download_bought - ($downloadableLinkPurchased->download_used + $downloadableLinkPurchased->download_canceled + 1);
+        return $this->validateExternalUrl($purchasedLink->url);
+    }
 
-        if ($downloadableLinkPurchased->download_bought) {
-            $this->downloadableLinkPurchasedRepository->update([
-                'download_used' => $downloadableLinkPurchased->download_used + 1,
-                'status'        => $remainingDownloads <= 0 ? 'expired' : $downloadableLinkPurchased->status,
-            ], $downloadableLinkPurchased->id);
+    /**
+     * Send the purchased link's file to the customer.
+     *
+     * @param  DownloadableLinkPurchased  $purchasedLink
+     * @return Response
+     */
+    protected function serveLink($purchasedLink)
+    {
+        if ($purchasedLink->type == 'file') {
+            return Storage::disk('private')->download($purchasedLink->file);
         }
 
-        if ($downloadableLinkPurchased->type == 'file') {
-            $privateDisk = Storage::disk('private');
+        $fileName = substr($purchasedLink->url, strrpos($purchasedLink->url, '/') + 1);
 
-            return $privateDisk->exists($downloadableLinkPurchased->file)
-                ? $privateDisk->download($downloadableLinkPurchased->file)
-                : abort(404);
-        } else {
-            $fileName = $name = substr($downloadableLinkPurchased->url, strrpos($downloadableLinkPurchased->url, '/') + 1);
+        $tempFile = tempnam(sys_get_temp_dir(), $fileName);
 
-            $tempImage = tempnam(sys_get_temp_dir(), $fileName);
+        copy($purchasedLink->url, $tempFile);
 
-            copy($downloadableLinkPurchased->url, $tempImage);
-
-            return response()->download($tempImage, $fileName);
-        }
+        return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
 }
